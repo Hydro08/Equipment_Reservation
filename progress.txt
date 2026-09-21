@@ -44,9 +44,12 @@ Sept 20, 2026 (Sunday | Task)
 - Added an admin window for testing
 
 Sept 21, 2026 (Monday)
-- Revised Dashboard content
-- Improved the Register Window
+- Added a Due Soon card and Total Equipment count to the Dashboard
+- Fixed dashboard card sizing bug (title text getting cut off)
+- Fixed Remember Me bug where admin accounts were opening the User Dashboard instead of Admin Dashboard
+- Improved the Register window
 - Added the project to GitHub
+- Started building the Admin Dashboard (in progress)
 
 Sept 22, 2026 (Tuesday | Task)
 - Create Reservation Panel

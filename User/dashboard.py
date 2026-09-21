@@ -66,7 +66,6 @@ class UserDashboard:
         self.user_window.geometry(f"{self.window_width}x{self.window_height}+{x}+{y}")
 
     def _build_ui(self):
-        self._set_window(True)
         self._top_navigation()
 
         self.top_navigation_bottom_border = tk.Frame(self.user_window, bg="#FFFFFF", width=2)
@@ -86,14 +85,6 @@ class UserDashboard:
         self.dashboard_app_name.pack(side="left", padx=(20,0))
         self.user_username = tk.Label(self.top_panel, text=f"{self.user['username']}", font=("Arial", 16, "underline"), bg="#1E293B", fg=self.primary_fg, cursor="hand2")
         self.user_username.pack(side="right", padx=(0,20))
-
-    def _set_window(self, zoomed):
-        if zoomed:
-            self._center_window()
-            self.user_window.state("zoomed")
-        else:
-            self._center_window()
-            self.user_window.state("normal")
 
     def _parent_frame(self):
         self.main_panel = tk.Frame(self.user_window, bg="#1E293B")
