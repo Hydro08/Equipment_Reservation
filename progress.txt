@@ -1,0 +1,60 @@
+Task
+Sept 13, 2026 (Sunday)
+- Built the Login / Register UI without database
+- Test and Debug Supabase until it worked
+
+Sept 14, 2026 (Monday)
+- Created the Top Navigation, Sidebar, Right_Panel
+- Created the Pages Directory and the Children of Right Panel
+- Added password_hash in Supabase
+
+Sept 15, 2026 (Tuesday)
+- Added six buttons and created a simple function to connect them to the children in the Pages directory
+- Tested and Debugged Login and Register to ensure they were fully functional
+- Add Remember Me to Login
+
+Sept 16, 2026 (Wednesday)
+- Added Dashboard content (Available Equipment, Pending Reservation, Borrowed Items, Approved Reservation)
+- Added threading to the Dashboard and Browse Equipment pages to prevent UI freezing during Supabase calls
+- Created the Remember Me Function using JSON
+- Tested and Debugged database
+
+Sept 17, 2026 (Thursday)
+- Added page navigation to Browse Equipment
+- Updated the database by adding categories and departments
+- Added some sample categories for testing
+- Fixed Dashboard card sizing bug caused by excessive padding
+- Built the Browse Equipment page with category-based drill-down navigation
+- Created a separate categories table and linked it to equipment via category_id
+- Fixed a bug where categories showed as "Uncategorized" due to RLS blocking access
+
+Sept 18, 2026 (Friday)
+- Rest Day
+
+Sept 19, 2026 (Saturday)
+- Added department content in browse equipment
+- Added departments table in Database
+- Restructured Browse Equipment into a hierarchical navigation: Department -> Category -> Equipment
+- Fixed cards font bug caused by excessive padding
+
+Sept 20, 2026 (Sunday | Task)
+- Added a modal for equipment reservation (not yet connected to the database and admin)
+- Added a confirmation dialog to the logout button
+- Fixed the logout button getting stuck when the user selects "No"
+- Added an admin window for testing
+
+Sept 21, 2026 (Monday)
+- Revised Dashboard content
+- Improved the Register Window
+
+Sept 22, 2026 (Tuesday | Task)
+- Create Reservation Panel
+- Connect "Reserve" button in Browse Equipment to create new reservation records
+- Build My Reservation page (Pending, Approved/Borrowed sections)
+- Test end-to-end flow: browse equipment → reserve → check dashboard updates
+
+Sept 23, 2026 (Wednesday | Task)
+- Build basic Admin Dashboard structure (sidebar, navigation)
+- Create Admin Reservation Management page (approve/reject reservations)
+- Create Notification Panel (User side)
+- Connect notifications to reservation status changes
