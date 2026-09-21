@@ -46,6 +46,7 @@ Sept 20, 2026 (Sunday | Task)
 Sept 21, 2026 (Monday)
 - Revised Dashboard content
 - Improved the Register Window
+- Added the project to GitHub
 
 Sept 22, 2026 (Tuesday | Task)
 - Create Reservation Panel
