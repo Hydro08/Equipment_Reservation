@@ -2,4 +2,5 @@
 
 git add .
 git commit -m "Update project"
+git pull --rebase origin main
 git push
