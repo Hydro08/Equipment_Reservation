@@ -51,13 +51,19 @@ Sept 21, 2026 (Monday)
 - Added the project to GitHub
 - Started building the Admin Dashboard (in progress)
 
-Sept 22, 2026 (Tuesday | Task)
+Sept 22, 2026 (Tuesday)
+- Completed Admin Dashboard shell (header, sidebar, navigation)
+- Added dashboard summary cards: Total Equipment, Total Users, Pending, Borrowed, Available
+- Connected dashboard to the database
+- Built Admin Manage Equipment page with Add/Edit/Delete (in progress)
+
+Sept 23, 2026 (Wednesday | Task)
 - Create Reservation Panel
 - Connect "Reserve" button in Browse Equipment to create new reservation records
 - Build My Reservation page (Pending, Approved/Borrowed sections)
 - Test end-to-end flow: browse equipment → reserve → check dashboard updates
 
-Sept 23, 2026 (Wednesday | Task)
+Sept 24, 2026 (Thursday | Task)
 - Build basic Admin Dashboard structure (sidebar, navigation)
 - Create Admin Reservation Management page (approve/reject reservations)
 - Create Notification Panel (User side)

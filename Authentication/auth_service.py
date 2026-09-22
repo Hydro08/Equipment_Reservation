@@ -70,6 +70,36 @@ def rehash_user_password(username: str, plain_password: str):
         messagebox.showinfo("Success", "Password updated successfully!")
         return response.data
 
+def get_admin_dashboard_summary():
+    try:
+        total_equipment_query: Any = supabase.table("equipment").select("id", count=CountMethod.exact)
+        total_equipment = total_equipment_query.execute()
+        total_user_query: Any = supabase.table("users").select("id", count=CountMethod.exact).eq("role", "user")
+        total_users = total_user_query.execute()
+        pending_query: Any = supabase.table("reservation").select("id", count=CountMethod.exact).eq("status", "Pending")
+        pending = pending_query.execute()
+        borrowed_query: Any = supabase.table("reservation").select("id", count=CountMethod.exact).eq("status", "Approved")
+        borrowed = borrowed_query.execute()
+        available_query: Any = supabase.table("equipment").select("id", count=CountMethod.exact).eq("status", "Available")
+        available = available_query.execute()
+
+        return {
+            "total_equipment": total_equipment.count or 0,
+            "total_users": total_users.count or 0,
+            "pending": pending.count or 0,
+            "borrowed": borrowed.count or 0,
+            "available": available.count or 0
+        }
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching admin dashboard summary: {e}")
+        return {
+            "total_equipment": 0,
+            "total_users": 0,
+            "pending": 0,
+            "borrowed": 0,
+            "available": 0
+        }
+
 def get_dashboard_summary(user_id):
     try:
         total_query: Any = supabase.table("equipment").select("id", count=CountMethod.exact)
@@ -108,7 +138,7 @@ def get_dashboard_summary(user_id):
 
 def get_all_departments():
     try:
-        response = supabase.table("departments").select("*)").execute()
+        response = supabase.table("departments").select("*").execute()
         return response.data or []
 
     except Exception as e:

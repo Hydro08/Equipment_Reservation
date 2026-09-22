@@ -45,6 +45,9 @@ class UserDashboard:
         self.user_window.title(f"{self.w_dashboard_title} - {self.app_name}")
         self.user_window.minsize(self.window_width, self.window_height)
         self.user_window.config(bg=self.primary_bg)
+        self.user_window.state("zoomed")
+
+        self._center_window()
 
         self.is_left_panel_minimize = False
         self.active_btn = None
@@ -77,30 +80,29 @@ class UserDashboard:
         self._highlight_active_button()
 
     def _top_navigation(self):
-        self.top_panel = tk.Frame(self.user_window, bg="#1E293B", height=85)
+        self.top_panel = tk.Frame(self.user_window, bg=self.primary_bg, height=85)
         self.top_panel.pack(fill="x")
         self.top_panel.propagate(False)
 
-        self.dashboard_app_name = tk.Label(self.top_panel, text=f"{self.app_name}", font=("Arial", 24), bg="#1E293B", fg=self.primary_fg)
+        self.dashboard_app_name = tk.Label(self.top_panel, text=f"{self.app_name}", font=("Arial", 24), bg=self.primary_bg, fg=self.primary_fg)
         self.dashboard_app_name.pack(side="left", padx=(20,0))
-        self.user_username = tk.Label(self.top_panel, text=f"{self.user['username']}", font=("Arial", 16, "underline"), bg="#1E293B", fg=self.primary_fg, cursor="hand2")
+        self.user_username = tk.Label(self.top_panel, text=f"{self.user['username']}", font=("Arial", 16, "underline"), bg=self.primary_bg, fg=self.primary_fg, cursor="hand2")
         self.user_username.pack(side="right", padx=(0,20))
 
     def _parent_frame(self):
-        self.main_panel = tk.Frame(self.user_window, bg="#1E293B")
+        self.main_panel = tk.Frame(self.user_window, bg=self.primary_bg)
         self.main_panel.pack(fill="both", expand=True)
 
         self._left_frame()
+        self._left_panel_border()
         self._right_frame()
 
     def _left_frame(self):
-        self.left_panel = tk.Frame(self.main_panel, bg="#1E293B", width=300)
+        self.left_panel = tk.Frame(self.main_panel, bg=self.primary_bg, width=300)
         self.left_panel.pack(side="left", fill="y")
         self.left_panel.pack_propagate(False)
 
-        self._left_panel_border()
-
-        self.minimize_panel = tk.Button(self.left_panel, text="<", font=("Arial", 12), width=3, cursor="hand2",  bg="#1E293B", fg="#FFFFFF")
+        self.minimize_panel = tk.Button(self.left_panel, text="<", font=("Arial", 12), width=3, cursor="hand2",  bg=self.primary_bg, fg="#FFFFFF")
         self.minimize_panel.pack(anchor="e", padx=(0, 20), pady=(20, 0))
         self.dashboard_btn = tk.Button(self.left_panel, text=self.nav_labels["dashboard_btn"][0], **self.btn_config)
         self.dashboard_btn.pack(pady=(50, 0), padx=(80, 0))
@@ -125,7 +127,7 @@ class UserDashboard:
         self.user_username.bind("<Button-1>", lambda e: self._show_profile_page())
 
     def _button_style(self):
-        return {"font": self.btn_font, "width": self.btn_width, "cursor": self.btn_cursor, "bg": "#1E293B", "fg": self.primary_fg,  "activebackground": "#1E293B", "activeforeground": "#FFFFFF",}
+        return {"font": self.btn_font, "width": self.btn_width, "cursor": self.btn_cursor, "bg": self.primary_bg, "fg": self.primary_fg,  "activebackground": self.primary_bg, "activeforeground": "#FFFFFF",}
 
     def _on_nav_click(self, event):
         clicked_button = event.widget
@@ -140,7 +142,7 @@ class UserDashboard:
             clicked_button.pack_configure(padx=(80, 0))
         else:
             for btn in (self.dashboard_btn, self.browse_equipment_btn, self.reservation_btn, self.notification_btn, self.profile_btn):
-                btn.config(bg="#1E293B")
+                btn.config(bg=self.primary_bg)
             clicked_button.config(bg="#334155")
 
         if clicked_button == self.dashboard_btn:
@@ -157,7 +159,7 @@ class UserDashboard:
     def _highlight_active_button(self):
         self._loops_btn()
         for btn in (self.dashboard_btn, self.browse_equipment_btn, self.reservation_btn, self.notification_btn, self.profile_btn):
-            btn.config(bg="#1E293B")
+            btn.config(bg=self.primary_bg)
 
         if self.active_btn is None:
             return
@@ -172,7 +174,7 @@ class UserDashboard:
             btn.pack_configure(padx=(0, 0))
 
     def _right_frame(self):
-        self.right_panel = tk.Frame(self.main_panel, bg="#1E293B")
+        self.right_panel = tk.Frame(self.main_panel, bg=self.primary_bg)
         self.right_panel.pack(side="right", fill="both", expand=True)
 
         self._show_dashboard()
@@ -202,7 +204,7 @@ class UserDashboard:
         self._summary_cards(summary)
 
     def _summary_cards(self, summary):
-        self.cards_frame = tk.Frame(self.right_panel, bg="#1E293B")
+        self.cards_frame = tk.Frame(self.right_panel, bg=self.primary_bg)
         self.cards_frame.pack(fill="both", expand=True, padx=40, pady=10)
 
         self.cards_frame.grid_columnconfigure(0, weight=1)
@@ -217,13 +219,12 @@ class UserDashboard:
         self._create_card(self.cards_frame, "Total Equipment", str(summary["total"]), row=1, column=1)
         self._create_card(self.cards_frame, "Due Soon", str(summary["due_soon"]), row=2, column=0)
 
-    @staticmethod
-    def _create_card(parent, title, value, row, column):
+    def _create_card(self, parent, title, value, row, column):
         card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
         card.grid(row=row, column=column, padx=15, pady=15, sticky="nsew")
         card.grid_propagate(False)
 
-        value_label = tk.Label(card, text=value, font=("Arial", 20, "bold"), bg="#334155", fg="#FFFFFF")
+        value_label = tk.Label(card, text=value, font=("Arial", 20, "bold"), bg="#334155", fg=self.primary_fg)
         value_label.pack(pady=(70, 10))
         title_label = tk.Label(card, text=title, font=("Arial", 24), bg="#334155", fg="#94A3B8")
         title_label.pack(pady=(30, 10))
@@ -286,9 +287,8 @@ class UserDashboard:
         self.left_panel.config(width=300)
 
         for btn in (
-        self.dashboard_btn, self.browse_equipment_btn, self.reservation_btn, self.notification_btn, self.profile_btn,
-        self.logout_btn):
-            btn.config(width=self.btn_width, bg="#1E293B")
+        self.dashboard_btn, self.browse_equipment_btn, self.reservation_btn, self.notification_btn, self.profile_btn):
+            btn.config(width=self.btn_width, bg=self.primary_bg)
 
     def _left_panel_border(self):
         self.left_panel_right_border = tk.Frame(self.main_panel, bg="#FFFFFF", width=1)

@@ -1,34 +1,37 @@
 import tkinter as tk
 import threading
 
-from Authentication.auth_service import get_all_equipment, get_all_departments, get_all_categories
 from tkinter import messagebox
+
+from Authentication.auth_service import get_all_equipment, get_all_departments, get_all_categories
 
 ITEMS_PER_PAGE = 6
 
-class BrowseEquipmentPage:
+class ManageEquipmentPage:
 
     primary_bg = "#1E293B"
+    primary_fg = "#FFFFFF"
 
     def __init__(self, parent, colors):
         self.parent = parent
         self.colors = colors
         self.current_page = 0
+
         self._build_ui()
 
     def _build_ui(self):
         self.main_frame = tk.Frame(self.parent, bg=self.primary_bg)
         self.main_frame.pack(fill="both", expand=True)
 
-        self.title_label = tk.Label(self.main_frame, text="Browse Equipment", font=("Arial", 24, "bold"), **self.colors)
-        self.title_label.pack(pady=(20, 10))
+        self.title_label = tk.Label(self.main_frame, text="Manage Equipment", font=("Arial", 24, "bold"), **self.colors)
+        self.title_label.pack(pady=(20, 0))
 
         self.loading_label = tk.Label(self.main_frame, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
 
-        threading.Thread(target=self._fetch_equipment_data, daemon=True).start()
+        threading.Thread(target=self._fetch_manage_equipment_data, daemon=True).start()
 
-    def _fetch_equipment_data(self):
+    def _fetch_manage_equipment_data(self):
         equipment_list = get_all_equipment()
         self.main_frame.after(0, self._render_equipment_list, equipment_list)
 
@@ -50,22 +53,41 @@ class BrowseEquipmentPage:
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-    @staticmethod
-    def _generic_grid(parent, self):
+    def _generic_grid(self, parent):
         row_frame = tk.Frame(parent, bg=self.primary_bg)
         row_frame.pack(fill="x", padx=10, pady=10)
         for col in range(3):
             row_frame.grid_columnconfigure(col, weight=1)
         return row_frame
 
+    def _show_options_menu(self, event, edit_command, delete_command):
+        menu = tk.Menu(self.content_frame, tearoff=0, bg="#334155", fg=self.primary_fg, activebackground=self.primary_bg, activeforeground=self.primary_fg)
+        menu.add_command(label="Edit", command=edit_command)
+        menu.add_command(label="Delete", command=delete_command)
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def _create_add_card(self, parent, row, col, on_click):
+        card = tk.Frame(parent, bg=self.primary_bg, height=180, cursor="hand2", highlightbackground="#94A3B8", highlightthickness=1)
+        card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+        card.grid_propagate(False)
+
+        plus_label = tk.Label(card, text="+", font=("Arial", 32), bg=self.primary_bg, fg="#94A3B8")
+        plus_label.pack(pady=(30, 10))
+
+        text_label = tk.Label(card, text="Add New", font=("Arial", 14), bg=self.primary_bg, fg="#94A3B8")
+        text_label.pack(pady=(0, 10))
+
+        for widget in (card, plus_label, text_label):
+            widget.bind("<Button-1>", lambda e: on_click())
+
+    def _refresh_data(self):
+        self.all_equipment = get_all_equipment()
+        self.all_departments = get_all_departments()
+        self.all_categories = get_all_categories()
+
     def _show_departments(self):
         self._clear_content()
-        self.title_label.config(text="Browse Equipment")
-
-        if not self.all_departments:
-            empty_label = tk.Label(self.content_frame, text="No departments found.", font=("Arial", 24), bg="#1E293B", fg="#94A3B8", height=50)
-            empty_label.pack(pady=20)
-            return
+        self.title_label.config(text="Manage Equipment")
 
         grouped = {dept["name"]: [] for dept in self.all_departments}
 
@@ -84,12 +106,18 @@ class BrowseEquipmentPage:
             if col > 2:
                 col, row = 0, row + 1
 
+        self._create_add_card(cards_row, row, col, self._open_add_department_form)
+
     def _create_department_card(self, parent, department, items, row, col):
         card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
         card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         card.grid_propagate(False)
 
-        name_label = tk.Label(card, text=department, font=("Arial", 18, "bold"), bg="#334155", fg="#FFFFFF")
+        options_btn = tk.Label(card, text="⋮", font=("Arial", 18, "bold"), bg="#334155", fg=self.primary_fg, cursor="hand2")
+        options_btn.place(relx=1.0, x=-15, y=10, anchor="ne")
+        options_btn.bind("<Button-1>", lambda e: self._show_options_menu(e, lambda: self._open_edit_department_form(department), lambda: self._confirm_delete_department(department, items)))
+
+        name_label = tk.Label(card, text=department, font=("Arial", 18, "bold"), bg="#334155", fg=self.primary_fg)
         name_label.pack(pady=(30, 30))
 
         count_label = tk.Label(card, text=f"{len(items)} item(s)", font=("Arial", 12), bg="#334155", fg="#94A3B8")
@@ -102,15 +130,10 @@ class BrowseEquipmentPage:
         self.current_department = department
         self.current_dept_items = dept_items
         self._clear_content()
-        self.title_label.config(text=f"Browse Equipment - {department}")
+        self.title_label.config(text=f"Manage Equipment - {department}")
 
-        back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=self._show_departments)
+        back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg=self.primary_bg, fg=self.primary_fg, cursor="hand2", bd=0, command=self._show_departments)
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
-
-        if not self.all_categories:
-            empty_label = tk.Label(self.content_frame, text="No categories found.", font=("Arial", 14), bg="#1E293B", fg="#94A3B8")
-            empty_label.pack(pady=20)
-            return
 
         grouped = {cat["name"]: [] for cat in self.all_categories}
 
@@ -129,10 +152,18 @@ class BrowseEquipmentPage:
             if col > 2:
                 col, row = 0, row + 1
 
+        self._create_add_card(cards_row, row, col, self._open_add_category_form)
+
     def _create_category_card(self, parent, category, items, row, col):
         card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
         card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         card.grid_propagate(False)
+
+        option_btn = tk.Label(card, text="⋮", font=("Arial", 18, "bold"), bg="#334155", fg=self.primary_fg, cursor="hand2")
+        option_btn.place(relx=1.0, x=-15, y=10, anchor="ne")
+        option_btn.bind("<Button-1>", lambda e: self._show_options_menu(
+            e, lambda: self._open_edit_category_form(category), lambda: self._confirm_delete_category(category, items)
+        ))
 
         name_label = tk.Label(card, text=category, font=("Arial", 18, "bold"), bg="#334155", fg="#FFFFFF")
         name_label.pack(pady=(30, 30))
@@ -153,7 +184,9 @@ class BrowseEquipmentPage:
         self._clear_content()
         self.title_label.config(text=f"Browse Equipment - {self.current_department} - {self.current_category}")
 
-        back_btn = tk.Button(self.content_frame, text="< Back to Categories", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=lambda: self._show_categories(self.current_department, self.current_dept_items))
+        back_btn = tk.Button(self.content_frame, text="< Back to Categories", font=("Arial", 12), bg="#1E293B",
+                             fg="#FFFFFF", cursor="hand2", bd=0,
+                             command=lambda: self._show_categories(self.current_department, self.current_dept_items))
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
 
         start_index = self.current_page * ITEMS_PER_PAGE
@@ -172,6 +205,8 @@ class BrowseEquipmentPage:
             if col > 2:
                 col, row = 0, row + 1
 
+        self._create_add_card(cards_row, row, col, self._open_add_equipment_form)
+
         self._pagination_controls()
 
     def _create_equipment_card(self, parent, item, row, col):
@@ -179,14 +214,19 @@ class BrowseEquipmentPage:
         self.card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         self.card.grid_propagate(False)
 
+        option_btn = tk.Label(self.card, text="⋮", font=("Arial", 18, "bold"), bg="#334155", fg=self.primary_fg, cursor="hand2")
+        option_btn.place(relx=1.0, x=-15, y=10, anchor="ne")
+        option_btn.bind("<Button-1>", lambda e: self._show_options_menu(
+            e, lambda: self._open_edit_equipment_form(item),
+            lambda: self._confirm_delete_equipment(item)
+        ))
+
         name_label = tk.Label(self.card, text=item["name"], font=("Arial", 16, "bold"), bg="#334155", fg="#FFFFFF")
         name_label.pack(pady=(30, 30))
 
-        status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155", fg="#4ADE80" if item["status"] == "Available" else "#F87171")
+        status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155",
+                                fg="#4ADE80" if item["status"] == "Available" else "#F87171")
         status_label.pack(pady=(0, 10))
-
-        for widget in (self.card, name_label, status_label):
-            widget.bind("<Button-1>", lambda e, it=item: self._show_equipment_details(it))
 
     def _pagination_controls(self):
         total_items = len(self.current_items)
@@ -198,14 +238,19 @@ class BrowseEquipmentPage:
         nav_frame = tk.Frame(self.content_frame, bg="#1E293B")
         nav_frame.pack(pady=(20, 10))
 
-        prev_btn = tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page > 0 else "disabled",command=self._go_previous_page)
+        prev_btn = tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF",
+                             cursor="hand2", bd=0, padx=15, pady=5,
+                             state="normal" if self.current_page > 0 else "disabled", command=self._go_previous_page)
         prev_btn.pack(side="left", padx=5)
 
         page_label = tk.Label(nav_frame, text=f"Page {self.current_page + 1} of {total_pages}",
-                               font=("Arial", 12), bg="#1E293B", fg="#94A3B8")
+                              font=("Arial", 12), bg="#1E293B", fg="#94A3B8")
         page_label.pack(side="left", padx=15)
 
-        next_btn = tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page < total_pages - 1 else "disabled", command=self._go_next_page)
+        next_btn = tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2",
+                             bd=0, padx=15, pady=5,
+                             state="normal" if self.current_page < total_pages - 1 else "disabled",
+                             command=self._go_next_page)
         next_btn.pack(side="left", padx=5)
 
     def _go_next_page(self):
@@ -216,27 +261,50 @@ class BrowseEquipmentPage:
         self.current_page -= 1
         self._render_category_page()
 
-    def _show_equipment_details(self, item):
-        self.details_overlay = tk.Frame(self.parent, bg="#1E293B")
-        self.details_overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
+    @staticmethod
+    def _open_add_department_form():
+        messagebox.showinfo("TODO", "ADD Department form soon.")
 
-        self.modal = tk.Frame(self.details_overlay, bg="#334155", width=400, height=300)
-        self.modal.place(relx=0.5, rely=0.5, anchor="center")
-        self.modal.pack_propagate(False)
+    @staticmethod
+    def _open_edit_department_form(department):
+        messagebox.showinfo("TODO", f"Edit Department: {department}")
 
-        self.name_label = tk.Label(self.modal, text=item["name"], font=("Arial", 20, "bold"), bg="#334155", fg="#94A3B8")
-        self.name_label.pack(pady=5)
+    @staticmethod
+    def _confirm_delete_department(department, items):
+        if items:
+            messagebox.showwarning("Cannot Delete", f"'{department}' still has {len(items)} equipment item(s).")
+            return
+        confirm = messagebox.askyesno("Confirm Delete", f"Delete department '{department}'?")
+        if confirm:
+            messagebox.showinfo("TODO", "Delete Logic soon.")
 
-        self.name_category = item.get("categories", {}).get("name", "N/A")
-        self.category_label = tk.Label(self.modal, text=f"Category: {self.name_category}", font=("Arial", 14), bg="#334155", fg="#94A3B8")
-        self.category_label.pack(pady=5)
+    @staticmethod
+    def _open_add_category_form():
+        messagebox.showinfo("TODO", "Add Category form soon.")
 
-        self.reserve_btn = tk.Button(self.modal, text="Reserve", font=("Arial", 14, "bold"), bg="#3AFD50", fg="#0F172A", cursor="hand2", command=lambda: self._confirm_reservation(item))
-        self.reserve_btn.pack(pady=(115, 5))
+    @staticmethod
+    def _open_edit_category_form(category):
+        messagebox.showinfo("TODO", f"Edit Category: {category}")
 
-        self.close_btn = tk.Button(self.modal, text="Close", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", command=self.details_overlay.destroy)
-        self.close_btn.pack(pady=5)
+    @staticmethod
+    def _confirm_delete_category(category, items):
+        if items:
+            messagebox.showwarning("Cannot Delete", f"'{category}' still has an {len(items)} equipment item(s).")
+            return
+        confirm = messagebox.askyesno("Confirm Delete", f"Delete category '{category}'")
+        if confirm:
+            messagebox.showinfo("TODO", "Delete logic soon.")
 
-    def _confirm_reservation(self, item):
-        messagebox.showinfo("Confirmation", f"Reserving: {item['name']}")
-        self.details_overlay.destroy()
+    @staticmethod
+    def _open_add_equipment_form():
+        messagebox.showinfo("TODO", "Add Equipment Form soon.")
+
+    @staticmethod
+    def _open_edit_equipment_form(item):
+        messagebox.showinfo("TODO", f"Edit Equipment: '{item['name']}'?")
+
+    @staticmethod
+    def _confirm_delete_equipment(item):
+        confirm = messagebox.askyesno("Confirm Delete", f"Delete equipment '{item['name']}'?")
+        if confirm:
+            messagebox.showinfo("TODO", "Delete logic soon.")
