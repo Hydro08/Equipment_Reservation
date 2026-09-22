@@ -214,7 +214,7 @@ class UserDashboard:
         self._create_card(self.cards_frame, "Available Equipment", str(summary["available"]), row=0, column=0)
         self._create_card(self.cards_frame, "Pending Reservation", str(summary["pending"]), row=0, column=1)
         self._create_card(self.cards_frame, "Borrowed Items", str(summary["borrowed"]), row=1, column=0)
-        self._create_card(self.cards_frame, "Total", str(summary["total"]), row=1, column=1)
+        self._create_card(self.cards_frame, "Total Equipment", str(summary["total"]), row=1, column=1)
         self._create_card(self.cards_frame, "Due Soon", str(summary["due_soon"]), row=2, column=0)
 
     @staticmethod
