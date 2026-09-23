@@ -66,6 +66,7 @@ Sept 23, 2026 (Wednesday)
 - Fixed dashboard "Borrowed Items" count showing all users' data instead of the logged-in user's
 - Fixed equipment status update using wrong dict syntax (comma instead of colon)
 - Fixed duplicate messagebox popup when reservation fails (unavailable/duplicate request)
+- Fixed minimize button for admin and user functions
 
 Sept 24, 2026 (Thursday | Task)
 - Create Reservation Panel

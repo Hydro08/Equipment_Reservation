@@ -74,6 +74,9 @@ class AdminDashboard:
 
         self._parent_frame()
 
+        self.active_btn = self.dashboard_btn
+        self._highlight_active_button()
+
     def _top_navigation(self):
         self.top_panel = tk.Frame(self.admin_window, bg=self.primary_bg, height=85)
         self.top_panel.pack(fill="x")
@@ -190,11 +193,13 @@ class AdminDashboard:
             self.minimize_panel_btn.config(text=">")
             self._update_nav_labels(True)
 
+        self._highlight_active_button()
+
     def _minimized_left_frame(self):
         self.is_left_panel_minimized = True
         self.left_panel.config(width=100)
 
-        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn, self.reports_btn):
+        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn, self.reports_btn, self.logout_btn):
             btn.config(width=4)
             btn.pack_configure(padx=(0, 0))
 
@@ -202,7 +207,7 @@ class AdminDashboard:
         self.is_left_panel_minimized = False
         self.left_panel.config(width=300)
 
-        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn, self.reports_btn):
+        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn, self.reports_btn, self.logout_btn):
             btn.config(width=self.btn_width, bg=self.primary_bg)
 
     def _update_nav_labels(self, minimized):

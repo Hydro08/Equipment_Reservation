@@ -287,7 +287,7 @@ class UserDashboard:
         self.left_panel.config(width=300)
 
         for btn in (
-        self.dashboard_btn, self.browse_equipment_btn, self.reservation_btn, self.notification_btn, self.profile_btn):
+        self.dashboard_btn, self.browse_equipment_btn, self.reservation_btn, self.notification_btn, self.profile_btn, self.logout_btn):
             btn.config(width=self.btn_width, bg=self.primary_bg)
 
     def _left_panel_border(self):
