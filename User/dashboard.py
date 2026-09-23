@@ -232,7 +232,7 @@ class UserDashboard:
     def _show_equipment_page(self):
         self.user_window.title(f"{self.w_browser_equip_title} - {self.app_name}")
         self._clear_right_panel()
-        BrowseEquipmentPage(self.right_panel, self.colors)
+        BrowseEquipmentPage(self.right_panel, self.colors, self.user["id"])
 
     def _show_reservation_page(self):
         self.user_window.title(f"{self.w_reservation_title} - {self.app_name}")

@@ -1,4 +1,5 @@
-Task
+=== PROGRESS ===
+
 Sept 13, 2026 (Sunday)
 - Built the Login / Register UI without database
 - Test and Debug Supabase until it worked
@@ -57,13 +58,22 @@ Sept 22, 2026 (Tuesday)
 - Connected dashboard to the database
 - Built Admin Manage Equipment page with Add/Edit/Delete (in progress)
 
-Sept 23, 2026 (Wednesday | Task)
+Sept 23, 2026 (Wednesday)
+- Created Admin Manage Reservation Page
+- Implemented Accept/Reject with auto-reject: approving a reservation
+  automatically rejects other pending requests for the same equipment
+- Synced equipment status with reservation status (Available <-> Unavailable)
+- Fixed dashboard "Borrowed Items" count showing all users' data instead of the logged-in user's
+- Fixed equipment status update using wrong dict syntax (comma instead of colon)
+- Fixed duplicate messagebox popup when reservation fails (unavailable/duplicate request)
+
+Sept 24, 2026 (Thursday | Task)
 - Create Reservation Panel
 - Connect "Reserve" button in Browse Equipment to create new reservation records
 - Build My Reservation page (Pending, Approved/Borrowed sections)
 - Test end-to-end flow: browse equipment → reserve → check dashboard updates
 
-Sept 24, 2026 (Thursday | Task)
+Sept 26, 2026 (Saturday | Task)
 - Build basic Admin Dashboard structure (sidebar, navigation)
 - Create Admin Reservation Management page (approve/reject reservations)
 - Create Notification Panel (User side)

@@ -4,6 +4,7 @@ import threading
 from tkinter import messagebox
 
 from Admin.pages.manage_equipment import ManageEquipmentPage
+from Admin.pages.manage_reservation import ManageReservationPage
 
 from Database.session_manager import clear_session
 from Authentication.auth_service import get_admin_dashboard_summary
@@ -231,7 +232,7 @@ class AdminDashboard:
         if clicked_button == self.dashboard_btn:
             self._show_dashboard()
         elif clicked_button == self.manage_reservation_btn:
-            messagebox.showinfo("Under Development", "Sorry This is under Development.")
+            self._show_manage_reservation_page()
         elif clicked_button == self.manage_equipment_btn:
             self._show_manage_equipment_page()
         elif clicked_button == self.manage_users_btn:
@@ -256,6 +257,11 @@ class AdminDashboard:
     def _loops_btn(self):
         for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn, self.reports_btn):
             btn.pack_configure(padx=(0, 0))
+
+    def _show_manage_reservation_page(self):
+        self.admin_window.title(f"{self.w_manage_reservation_title} - {self.app_name}")
+        self._clear_right_panel()
+        ManageReservationPage(self.right_panel, self.colors)
 
     def _show_manage_equipment_page(self):
         self.admin_window.title(f"{self.w_manage_equipment_title} - {self.app_name}")

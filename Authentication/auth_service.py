@@ -108,7 +108,7 @@ def get_dashboard_summary(user_id):
         available = available_query.execute()
         pending_query: Any = supabase.table("reservation").select("id", count=CountMethod.exact).eq("user_id", user_id).eq("status", "Pending")
         pending = pending_query.execute()
-        borrowed_query: Any = supabase.table("reservation").select("id", count=CountMethod.exact).eq("status", "Approved")
+        borrowed_query: Any = supabase.table("reservation").select("id", count=CountMethod.exact).eq("user_id", user_id).eq("status", "Approved")
         borrowed = borrowed_query.execute()
 
         warning_days = 1
@@ -161,3 +161,79 @@ def get_all_equipment():
     except Exception as e:
         messagebox.showerror("Database Error", f"Error Fetching equipment: {e}")
         return []
+
+def create_reservation(user_id, equipment_id, reserved_date, return_date):
+    try:
+        equipment_check: Any = supabase.table("equipment").select("status").eq("id", equipment_id)
+        equipment = equipment_check.execute()
+
+        if not equipment.data or equipment.data[0]["status"] != "Available":
+            return "unavailable"
+
+        duplicate_query: Any = supabase.table("reservation").select("id").eq("user_id", user_id).eq("equipment_id", equipment_id).eq("status", "Pending")
+        duplicate = duplicate_query.execute()
+
+        if duplicate.data:
+            return "duplicate"
+
+        insert_query: Any = supabase.table("reservation").insert({
+            "user_id": user_id,
+            "equipment_id": equipment_id,
+            "reserved_date": str(reserved_date),
+            "return_date": str(return_date),
+            "status": "Pending",
+        })
+        response = insert_query.execute()
+
+        return "success" if response.data else "failed"
+
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error creating reservation: {e}")
+        return False
+
+def get_pending_reservation():
+    try:
+        response_query: Any = supabase.table("reservation").select("*, users(username), equipment(name)").eq("status", "Pending")
+        response = response_query.execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error Fetching pending reservation: {e}")
+        return []
+
+def update_reservation_status(reservation_id, new_status):
+    try:
+        response_query: Any = supabase.table("reservation").update({"status": new_status}).eq("id", reservation_id)
+        response = response_query.execute()
+
+        if not response.data:
+            return False
+
+        equipment_id = response.data[0]["equipment_id"]
+
+        if new_status == "Approved":
+            eq_update: Any = supabase.table("equipment").update({"status": "Unavailable"}).eq("id", equipment_id)
+            eq_response = eq_update.execute()
+
+            if not eq_response.data:
+                messagebox.showerror("Database Error", "Reservation was approved, but equipment status was not updated.")
+
+            others_query: Any = supabase.table("reservation").select("id").eq("equipment_id", equipment_id).eq("status","Pending").neq("id", reservation_id)
+            others = others_query.execute()
+
+            if others.data:
+                other_ids = [row["id"] for row in others.data]
+                update_query: Any = supabase.table("reservation").update({"status": "Rejected"}).in_("id", other_ids)
+                update_query.execute()
+        elif new_status == "Rejected":
+            approved_check: Any = supabase.table("reservation").select("id").eq("equipment_id", equipment_id).eq("status", "Approved")
+            approved = approved_check.execute()
+
+            if not approved.data:
+                available_check: Any = supabase.table("equipment").update({"status": "Available"}).eq("id", equipment_id)
+                available_check.execute()
+
+        return True
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error updating reservation status: {e}")
+        return False

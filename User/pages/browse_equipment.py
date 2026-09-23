@@ -1,7 +1,8 @@
 import tkinter as tk
 import threading
+from datetime import date, timedelta
 
-from Authentication.auth_service import get_all_equipment, get_all_departments, get_all_categories
+from Authentication.auth_service import get_all_equipment, get_all_departments, get_all_categories, create_reservation
 from tkinter import messagebox
 
 ITEMS_PER_PAGE = 6
@@ -10,9 +11,10 @@ class BrowseEquipmentPage:
 
     primary_bg = "#1E293B"
 
-    def __init__(self, parent, colors):
+    def __init__(self, parent, colors, user_id):
         self.parent = parent
         self.colors = colors
+        self.current_user_id = user_id
         self.current_page = 0
         self._build_ui()
 
@@ -50,8 +52,7 @@ class BrowseEquipmentPage:
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-    @staticmethod
-    def _generic_grid(parent, self):
+    def _generic_grid(self, parent):
         row_frame = tk.Frame(parent, bg=self.primary_bg)
         row_frame.pack(fill="x", padx=10, pady=10)
         for col in range(3):
@@ -220,23 +221,41 @@ class BrowseEquipmentPage:
         self.details_overlay = tk.Frame(self.parent, bg="#1E293B")
         self.details_overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-        self.modal = tk.Frame(self.details_overlay, bg="#334155", width=400, height=300)
+        self.modal = tk.Frame(self.details_overlay, bg="#334155", width=450, height=300)
         self.modal.place(relx=0.5, rely=0.5, anchor="center")
         self.modal.pack_propagate(False)
 
         self.name_label = tk.Label(self.modal, text=item["name"], font=("Arial", 20, "bold"), bg="#334155", fg="#94A3B8")
         self.name_label.pack(pady=5)
 
+        self.name_department = item.get("departments", {}).get("name", "N/A")
+        self.department_label = tk.Label(self.modal, text=f"Department: {self.name_department}", font=("Arial", 14), bg="#334155", fg="#94A3B8")
+        self.department_label.pack(pady=5)
+
         self.name_category = item.get("categories", {}).get("name", "N/A")
         self.category_label = tk.Label(self.modal, text=f"Category: {self.name_category}", font=("Arial", 14), bg="#334155", fg="#94A3B8")
         self.category_label.pack(pady=5)
 
         self.reserve_btn = tk.Button(self.modal, text="Reserve", font=("Arial", 14, "bold"), bg="#3AFD50", fg="#0F172A", cursor="hand2", command=lambda: self._confirm_reservation(item))
-        self.reserve_btn.pack(pady=(115, 5))
+        self.reserve_btn.pack(pady=(80, 5))
 
         self.close_btn = tk.Button(self.modal, text="Close", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", command=self.details_overlay.destroy)
         self.close_btn.pack(pady=5)
 
     def _confirm_reservation(self, item):
-        messagebox.showinfo("Confirmation", f"Reserving: {item['name']}")
-        self.details_overlay.destroy()
+        result = create_reservation(
+            user_id=self.current_user_id,
+            equipment_id=item["id"],
+            reserved_date=date.today(),
+            return_date=date.today() + timedelta(days=3),
+        )
+
+        if result == "success":
+            messagebox.showinfo("Success", f"Reservation request sent: {item['name']}")
+            self.details_overlay.destroy()
+        elif result == "unavailable":
+            messagebox.showinfo("Unavailable", "This equipment is currently unavailable.")
+        elif result == "duplicate":
+            messagebox.showinfo("Already Requested", "You already have a pending request for this equipment.")
+        else:
+            messagebox.showerror("Error", "Failed to submit reservation.")
