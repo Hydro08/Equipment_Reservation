@@ -186,8 +186,6 @@ def create_reservation(user_id, equipment_id, reserved_date, return_date):
         response = insert_query.execute()
 
         return "success" if response.data else "failed"
-
-        return bool(response.data)
     except Exception as e:
         messagebox.showerror("Database Error", f"Error creating reservation: {e}")
         return False
