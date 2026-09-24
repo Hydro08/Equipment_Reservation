@@ -7,7 +7,7 @@ from Authentication.auth_service import get_all_equipment, get_all_departments, 
 
 ITEMS_PER_PAGE = 6
 
-class ManageEquipmentPage:
+class ManageInventoryPage:
 
     primary_bg = "#1E293B"
     primary_fg = "#FFFFFF"
@@ -20,20 +20,20 @@ class ManageEquipmentPage:
         self._build_ui()
 
     def _build_ui(self):
-        self.main_frame = tk.Frame(self.parent, bg=self.primary_bg)
-        self.main_frame.pack(fill="both", expand=True)
+        self.manage_inventory_panel = tk.Frame(self.parent, bg=self.primary_bg)
+        self.manage_inventory_panel.pack(fill="both", expand=True)
 
-        self.title_label = tk.Label(self.main_frame, text="Manage Equipment", font=("Arial", 24, "bold"), **self.colors)
+        self.title_label = tk.Label(self.manage_inventory_panel, text="Manage Inventory", font=("Arial", 24, "bold"), **self.colors)
         self.title_label.pack(pady=(20, 0))
 
-        self.loading_label = tk.Label(self.main_frame, text="Loading...", font=("Arial", 24), **self.colors, height=50)
+        self.loading_label = tk.Label(self.manage_inventory_panel, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
 
         threading.Thread(target=self._fetch_manage_equipment_data, daemon=True).start()
 
     def _fetch_manage_equipment_data(self):
         equipment_list = get_all_equipment()
-        self.main_frame.after(0, self._render_equipment_list, equipment_list)
+        self.manage_inventory_panel.after(0, self._render_equipment_list, equipment_list)
 
     def _render_equipment_list(self, equipment_list):
         if not self.loading_label.winfo_exists():
@@ -44,7 +44,7 @@ class ManageEquipmentPage:
         self.all_departments = get_all_departments()
         self.all_categories = get_all_categories()
 
-        self.content_frame = tk.Frame(self.main_frame, bg=self.primary_bg)
+        self.content_frame = tk.Frame(self.manage_inventory_panel, bg=self.primary_bg)
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         self._show_departments()
@@ -87,7 +87,7 @@ class ManageEquipmentPage:
 
     def _show_departments(self):
         self._clear_content()
-        self.title_label.config(text="Manage Equipment")
+        self.title_label.config(text="Manage Inventory")
 
         grouped = {dept["name"]: [] for dept in self.all_departments}
 
@@ -130,7 +130,7 @@ class ManageEquipmentPage:
         self.current_department = department
         self.current_dept_items = dept_items
         self._clear_content()
-        self.title_label.config(text=f"Manage Equipment - {department}")
+        self.title_label.config(text=f"Manage Inventory - {department}")
 
         back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg=self.primary_bg, fg=self.primary_fg, cursor="hand2", bd=0, command=self._show_departments)
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
@@ -182,11 +182,9 @@ class ManageEquipmentPage:
 
     def _render_category_page(self):
         self._clear_content()
-        self.title_label.config(text=f"Browse Equipment - {self.current_department} - {self.current_category}")
+        self.title_label.config(text=f"Manage Inventory - {self.current_department} - {self.current_category}")
 
-        back_btn = tk.Button(self.content_frame, text="< Back to Categories", font=("Arial", 12), bg="#1E293B",
-                             fg="#FFFFFF", cursor="hand2", bd=0,
-                             command=lambda: self._show_categories(self.current_department, self.current_dept_items))
+        back_btn = tk.Button(self.content_frame, text="< Back to Categories", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=lambda: self._show_categories(self.current_department, self.current_dept_items))
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
 
         start_index = self.current_page * ITEMS_PER_PAGE
@@ -224,8 +222,7 @@ class ManageEquipmentPage:
         name_label = tk.Label(self.card, text=item["name"], font=("Arial", 16, "bold"), bg="#334155", fg="#FFFFFF")
         name_label.pack(pady=(30, 30))
 
-        status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155",
-                                fg="#4ADE80" if item["status"] == "Available" else "#F87171")
+        status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155", fg="#4ADE80" if item["status"] == "Available" else "#F87171")
         status_label.pack(pady=(0, 10))
 
     def _pagination_controls(self):
@@ -238,19 +235,14 @@ class ManageEquipmentPage:
         nav_frame = tk.Frame(self.content_frame, bg="#1E293B")
         nav_frame.pack(pady=(20, 10))
 
-        prev_btn = tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF",
-                             cursor="hand2", bd=0, padx=15, pady=5,
-                             state="normal" if self.current_page > 0 else "disabled", command=self._go_previous_page)
+        prev_btn = tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page > 0 else "disabled", command=self._go_previous_page)
         prev_btn.pack(side="left", padx=5)
 
         page_label = tk.Label(nav_frame, text=f"Page {self.current_page + 1} of {total_pages}",
                               font=("Arial", 12), bg="#1E293B", fg="#94A3B8")
         page_label.pack(side="left", padx=15)
 
-        next_btn = tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2",
-                             bd=0, padx=15, pady=5,
-                             state="normal" if self.current_page < total_pages - 1 else "disabled",
-                             command=self._go_next_page)
+        next_btn = tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page < total_pages - 1 else "disabled", command=self._go_next_page)
         next_btn.pack(side="left", padx=5)
 
     def _go_next_page(self):

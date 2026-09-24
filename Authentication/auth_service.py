@@ -117,7 +117,6 @@ def get_dashboard_summary(user_id):
         due_soon_query: Any = supabase.table("reservation").select("id", count=CountMethod.exact)
         due_soon = due_soon_query.eq("user_id", user_id).eq("status", "Approved").lte("return_date", str(due_soon_date)).execute()
 
-
         return {
             "available": available.count or 0,
             "pending": pending.count or 0,
@@ -234,4 +233,39 @@ def update_reservation_status(reservation_id, new_status):
         return True
     except Exception as e:
         messagebox.showerror("Database Error", f"Error updating reservation status: {e}")
+        return False
+
+def get_user_reservations(user_id):
+    try:
+        query: Any = supabase.table("reservation").select("*, equipment(name, categories(name), departments(name))").eq("user_id", user_id).in_("status", ["Pending", "Approved"])
+        response = query.execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching your reservations: {e}")
+        return []
+
+def cancel_reservation(reservation_id):
+    try:
+        query: Any = supabase.table("reservation").update({"status": "Cancelled"}).eq("id", reservation_id).eq("status", "Pending")
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Failed", f"Error Cancelling reservation: {e}")
+        return False
+
+def return_equipment(reservation_id):
+    try:
+        query: Any = supabase.table("reservation").update({"status": "Returned"}).eq("id", reservation_id).eq("status", "Approved")
+        response = query.execute()
+
+        if not response.data:
+            return False
+
+        equipment_id = response.data[0]["equipment_id"]
+        equipment_query: Any =supabase.table("equipment").update({"status": "Available"}).eq("id", equipment_id)
+        equipment_query.execute()
+
+        return True
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error returning equipment: {e}")
         return False

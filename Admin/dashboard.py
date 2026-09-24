@@ -3,8 +3,10 @@ import threading
 
 from tkinter import messagebox
 
-from Admin.pages.manage_equipment import ManageEquipmentPage
+from Admin.pages.manage_inventory import ManageInventoryPage
 from Admin.pages.manage_reservation import ManageReservationPage
+from Admin.pages.manage_user import ManageUsersPage
+from Admin.pages.report import ReportsPage
 
 from Database.session_manager import clear_session
 from Authentication.auth_service import get_admin_dashboard_summary
@@ -25,14 +27,14 @@ class AdminDashboard:
 
     w_dashboard_title = "Dashboard"
     w_manage_reservation_title = "Manage Reservation"
-    w_manage_equipment_title = "Manage Equipment"
+    w_manage_inventory_title = "Manage Inventory"
     w_manage_users_title = "Manage Users"
     w_reports_title = "Reports"
 
     nav_labels = {
         "dashboard_btn": ("Dashboard", "🏠"),
         "manage_reservation_btn": ("Manage\nReservation", "📋"),
-        "manage_equipment_btn": ("Manage\nEquipment", "📦"),
+        "manage_inventory_btn": ("Manage\nInventory", "📦"),
         "manage_users_btn": ("Manage Users", "👥"),
         "reports_btn": ("Reports", "📊"),
         "logout_btn": ("Log out", "🚪"),
@@ -104,8 +106,8 @@ class AdminDashboard:
         self.dashboard_btn.pack(pady=(50, 0), padx=(80, 0))
         self.manage_reservation_btn = tk.Button(self.left_panel, text=self.nav_labels["manage_reservation_btn"][0], **self.btn_config)
         self.manage_reservation_btn.pack(pady=(50, 0))
-        self.manage_equipment_btn = tk.Button(self.left_panel, text=self.nav_labels["manage_equipment_btn"][0], **self.btn_config)
-        self.manage_equipment_btn.pack(pady=(50, 0))
+        self.manage_inventory_btn = tk.Button(self.left_panel, text=self.nav_labels["manage_inventory_btn"][0], **self.btn_config)
+        self.manage_inventory_btn.pack(pady=(50, 0))
         self.manage_users_btn = tk.Button(self.left_panel, text=self.nav_labels["manage_users_btn"][0], **self.btn_config)
         self.manage_users_btn.pack(pady=(50, 0))
         self.reports_btn = tk.Button(self.left_panel, text=self.nav_labels["reports_btn"][0], **self.btn_config)
@@ -116,7 +118,7 @@ class AdminDashboard:
         self.minimize_panel_btn.bind("<Button-1>", lambda e: self.toggle_sidebar())
         self.dashboard_btn.bind("<Button-1>", self._on_nav_click)
         self.manage_reservation_btn.bind("<Button-1>", self._on_nav_click)
-        self.manage_equipment_btn.bind("<Button-1>", self._on_nav_click)
+        self.manage_inventory_btn.bind("<Button-1>", self._on_nav_click)
         self.manage_users_btn.bind("<Button-1>", self._on_nav_click)
         self.reports_btn.bind("<Button-1>", self._on_nav_click)
 
@@ -199,7 +201,7 @@ class AdminDashboard:
         self.is_left_panel_minimized = True
         self.left_panel.config(width=100)
 
-        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn, self.reports_btn, self.logout_btn):
+        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn, self.manage_users_btn, self.reports_btn, self.logout_btn):
             btn.config(width=4)
             btn.pack_configure(padx=(0, 0))
 
@@ -207,7 +209,7 @@ class AdminDashboard:
         self.is_left_panel_minimized = False
         self.left_panel.config(width=300)
 
-        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn, self.reports_btn, self.logout_btn):
+        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn, self.manage_users_btn, self.reports_btn, self.logout_btn):
             btn.config(width=self.btn_width, bg=self.primary_bg)
 
     def _update_nav_labels(self, minimized):
@@ -229,7 +231,7 @@ class AdminDashboard:
             clicked_button.pack_configure(padx=(80, 0))
         else:
             for btn in (
-            self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn,
+            self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn, self.manage_users_btn,
             self.reports_btn):
                 btn.config(bg=self.primary_bg)
                 clicked_button.config(bg="#334155")
@@ -238,16 +240,16 @@ class AdminDashboard:
             self._show_dashboard()
         elif clicked_button == self.manage_reservation_btn:
             self._show_manage_reservation_page()
-        elif clicked_button == self.manage_equipment_btn:
-            self._show_manage_equipment_page()
+        elif clicked_button == self.manage_inventory_btn:
+            self._show_manage_inventory_page()
         elif clicked_button == self.manage_users_btn:
-            messagebox.showinfo("Under Development", "Sorry This is under Development.")
+            self._show_manage_users_page()
         elif clicked_button == self.reports_btn:
-            messagebox.showinfo("Under Development", "Sorry This is under Development.")
+            self._show_reports_page()
 
     def _highlight_active_button(self):
         self._loops_btn()
-        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn,
+        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn, self.manage_users_btn,
                     self.reports_btn):
             btn.config(bg=self.primary_bg)
 
@@ -260,7 +262,7 @@ class AdminDashboard:
             self.active_btn.pack_configure(padx=(80, 0))
 
     def _loops_btn(self):
-        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_equipment_btn, self.manage_users_btn, self.reports_btn):
+        for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn, self.manage_users_btn, self.reports_btn):
             btn.pack_configure(padx=(0, 0))
 
     def _show_manage_reservation_page(self):
@@ -268,10 +270,20 @@ class AdminDashboard:
         self._clear_right_panel()
         ManageReservationPage(self.right_panel, self.colors)
 
-    def _show_manage_equipment_page(self):
-        self.admin_window.title(f"{self.w_manage_equipment_title} - {self.app_name}")
+    def _show_manage_inventory_page(self):
+        self.admin_window.title(f"{self.w_manage_inventory_title} - {self.app_name}")
         self._clear_right_panel()
-        ManageEquipmentPage(self.right_panel, self.colors)
+        ManageInventoryPage(self.right_panel, self.colors)
+
+    def _show_manage_users_page(self):
+        self.admin_window.title(f"{self.w_manage_users_title} - {self.app_name}")
+        self._clear_right_panel()
+        ManageUsersPage(self.right_panel, self.colors)
+
+    def _show_reports_page(self):
+        self.admin_window.title(f"{self.w_reports_title} - {self.app_name}")
+        self._clear_right_panel()
+        ReportsPage(self.right_panel, self.colors)
 
     def _clear_right_panel(self):
         for widget in self.right_panel.winfo_children():

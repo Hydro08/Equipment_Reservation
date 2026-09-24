@@ -5,7 +5,7 @@ from tkinter import messagebox
 
 from Authentication.auth_service import get_pending_reservation, update_reservation_status
 
-ITEMS_PER_PAGE = 6
+ITEMS_PER_PAGE = 5
 
 class ManageReservationPage:
 
@@ -20,20 +20,20 @@ class ManageReservationPage:
         self._build_ui()
 
     def _build_ui(self):
-        self.main_frame = tk.Frame(self.parent, bg=self.primary_bg)
-        self.main_frame.pack(fill="both", expand=True)
+        self.manage_reservation_panel = tk.Frame(self.parent, bg=self.primary_bg)
+        self.manage_reservation_panel.pack(fill="both", expand=True)
 
-        self.title_label = tk.Label(self.main_frame, text="Manage Reservation", font=("Arial", 24, "bold"), **self.colors)
+        self.title_label = tk.Label(self.manage_reservation_panel, text="Manage Reservation", font=("Arial", 24, "bold"), **self.colors)
         self.title_label.pack(pady=(20, 0))
 
-        self.loading_label = tk.Label(self.main_frame, text="Loading...", font=("Arial", 24), **self.colors, height=50)
+        self.loading_label = tk.Label(self.manage_reservation_panel, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
 
         threading.Thread(target=self._fetch_reservation_data, daemon=True).start()
 
     def _fetch_reservation_data(self):
         reservations = get_pending_reservation()
-        self.main_frame.after(0, self._render_reservations, reservations)
+        self.manage_reservation_panel.after(0, self._render_reservations, reservations)
 
     def _render_reservations(self, reservations):
         if not self.loading_label.winfo_exists():
@@ -42,7 +42,7 @@ class ManageReservationPage:
         self.loading_label.destroy()
         self.all_reservations = reservations
 
-        self.content_frame = tk.Frame(self.main_frame, bg=self.primary_bg)
+        self.content_frame = tk.Frame(self.manage_reservation_panel, bg=self.primary_bg)
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         self.current_page = 0

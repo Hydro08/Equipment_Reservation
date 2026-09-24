@@ -237,7 +237,7 @@ class UserDashboard:
     def _show_reservation_page(self):
         self.user_window.title(f"{self.w_reservation_title} - {self.app_name}")
         self._clear_right_panel()
-        ReservationPage(self.right_panel, self.colors)
+        ReservationPage(self.right_panel, self.colors, self.user)
 
     def _show_notification_page(self):
         self.user_window.title(f"{self.w_notification_title} - {self.app_name}")

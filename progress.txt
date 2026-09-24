@@ -68,13 +68,25 @@ Sept 23, 2026 (Wednesday)
 - Fixed duplicate messagebox popup when reservation fails (unavailable/duplicate request)
 - Fixed minimize button for admin and user functions
 
-Sept 24, 2026 (Thursday | Task)
+Sept 24, 2026 (Thursday)
+- Created User "My Reservation" page (Department, Category, Equipment, status, action button)
+- Implemented Cancel (for Pending) and Return (for Approved) buttons and their backend functions
+- Fixed cancel_reservation/return_equipment not returning query response correctly
+  (was reading .data from the query builder instead of the executed response)
+- Fixed page not refreshing after Cancel/Return due to a TypeError in
+  _refresh_after_action (dividing a list instead of its length)
+- Verified user-side actions correctly reflect in the admin Manage Reservations page
+
+Sept 25, 2026 (Friday)
+- Rest Day
+
+Sept 26, 2026 (Saturday | Task)
 - Create Reservation Panel
 - Connect "Reserve" button in Browse Equipment to create new reservation records
 - Build My Reservation page (Pending, Approved/Borrowed sections)
 - Test end-to-end flow: browse equipment → reserve → check dashboard updates
 
-Sept 26, 2026 (Saturday | Task)
+Sept 27, 2026 (Monday | Task)
 - Build basic Admin Dashboard structure (sidebar, navigation)
 - Create Admin Reservation Management page (approve/reject reservations)
 - Create Notification Panel (User side)

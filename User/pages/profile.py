@@ -4,7 +4,7 @@ class ProfilePage:
 
     def __init__(self, parent, color):
         self.parent = parent
-        self.color = color
+        self.colors = color
 
         self._build_ui()
 
@@ -12,5 +12,8 @@ class ProfilePage:
         self.profile_panel = tk.Frame(self.parent, bg="#1E293B")
         self.profile_panel.pack(fill="both", expand=True)
 
-        self.profile_title = tk.Label(self.profile_panel, text="Profile", font=("Arial", 24), **self.color)
+        self.profile_title = tk.Label(self.profile_panel, text="Profile", font=("Arial", 24), **self.colors)
         self.profile_title.pack(pady=(20, 0))
+
+        self.working_label = tk.Label(self.profile_panel, text="Sa susunod na to sir...", font=("Arial", 24, "bold"), **self.colors, height=50)
+        self.working_label.pack()
