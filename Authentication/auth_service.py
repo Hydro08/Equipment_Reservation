@@ -269,3 +269,128 @@ def return_equipment(reservation_id):
     except Exception as e:
         messagebox.showerror("Database Error", f"Error returning equipment: {e}")
         return False
+
+def get_user_notification(user_id):
+    try:
+        query: Any = supabase.table("reservation").select("*, equipment(name)").eq("user_id", user_id).in_("status", ["Approved", "Rejected"]).eq("notification_seen", False)
+        response = query.execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching notifications: {e}")
+        return []
+
+def dismiss_notification(reservation_id):
+    try:
+        query: Any = supabase.table("reservation").update({"notification_seen": True}).eq("id", reservation_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error dismissing notification: {e}")
+        return False
+
+def add_department(name):
+    try:
+        check: Any = supabase.table("departments").select("id").ilike("name", name)
+        existing = check.execute()
+        if existing.data:
+            messagebox.showwarning("Duplicate", f"Department '{name}' already exists.")
+            return False
+
+        query: Any = supabase.table("departments").insert({"name": name})
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error adding departments: {e}")
+        return False
+
+def update_department(department_id, new_name):
+    try:
+        query: Any = supabase.table("departments").update({"name": new_name}).eq("id", department_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error updating departments: {e}")
+        return False
+
+def delete_department(department_id):
+    try:
+        query: Any = supabase.table("departments").delete().eq("id", department_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error deleting departments: {e}")
+        return False
+
+def add_category(name):
+    try:
+        check: Any = supabase.table("categories").select("id").ilike("name", name)
+        existing = check.execute()
+        if existing.data:
+            messagebox.showwarning("Duplicate", f"Category '{name}' already exists.")
+            return False
+
+        query: Any = supabase.table("categories").insert({"name": name})
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error adding category: {e}")
+        return False
+
+def update_category(category_id, new_name):
+    try:
+        query: Any = supabase.table("categories").update({"name": new_name}).eq("id", category_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error updating category: {e}")
+        return False
+
+def delete_category(category_id):
+    try:
+        query: Any = supabase.table("categories").delete().eq("id", category_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error deleting category: {e}")
+        return False
+
+def add_equipment(name, category_id, department_id, status="Available"):
+    try:
+        query: Any = supabase.table("equipment").insert({
+            "name": name,
+            "category_id": category_id,
+            "department_id": department_id,
+            "status": status
+        })
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error adding equipment: {e}")
+        return False
+
+def update_equipment(equipment_id, data):
+    try:
+        query: Any = supabase.table("equipment").update(data).eq("id", equipment_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error updating equipment: {e}")
+        return False
+
+def equipment_has_active_reservation(equipment_id):
+    try:
+        query: Any = supabase.table("reservation").select("id").eq("equipment_id", equipment_id).in_("status", ["Pending", "Approved"])
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error checking reservations: {e}")
+        return True
+
+def delete_equipment(equipment_id):
+    try:
+        query: Any = supabase.table("equipment").delete().eq("id", equipment_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error deleting equipment: {e}")
+        return False

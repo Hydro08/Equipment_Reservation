@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from Authentication.auth_service import get_all_equipment, get_all_departments, get_all_categories, create_reservation
 from tkinter import messagebox
 
-ITEMS_PER_PAGE = 6
+GRID_ITEMS_PER_PAGE = 9
 
 class BrowseEquipmentPage:
 
@@ -16,6 +16,9 @@ class BrowseEquipmentPage:
         self.colors = colors
         self.current_user_id = user_id
         self.current_page = 0
+        self.current_department_page = 0
+        self.current_category_page = 0
+
         self._build_ui()
 
     def _build_ui(self):
@@ -76,14 +79,46 @@ class BrowseEquipmentPage:
             grouped.setdefault(department, [])
             grouped[department].append(item)
 
+        self.current_department_list = list(grouped.items())
+
+        start_index = self.current_department_page * GRID_ITEMS_PER_PAGE
+        end_index = start_index + GRID_ITEMS_PER_PAGE
+        page_departments = self.current_department_list[start_index:end_index]
+
         cards_row = self._generic_grid(self.content_frame)
 
         row, col = 0, 0
-        for department, items in grouped.items():
+        for department, items in page_departments:
             self._create_department_card(cards_row, department, items, row, col)
             col += 1
             if col > 2:
                 col, row = 0, row + 1
+
+        self._department_pagination_controls()
+
+    def _department_pagination_controls(self):
+        total_items = len(self.current_department_list)
+        total_pages = max(1, -(-total_items // GRID_ITEMS_PER_PAGE))
+
+        if total_pages <= 1:
+            return
+
+        nav_frame = tk.Frame(self.content_frame, bg=self.primary_bg)
+        nav_frame.pack(pady=(20, 10))
+
+        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_department_page > 0 else "disabled",command=self._go_previous_department_page).pack(side="left", padx=5)
+
+        tk.Label(nav_frame, text=f"Page {self.current_department_page + 1} of {total_pages}", font=("Arial", 12), bg=self.primary_bg, fg="#94A3B8").pack(side="left", padx=15)
+
+        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_department_page < total_pages - 1 else "disabled",command=self._go_next_department_page).pack(side="left", padx=5)
+
+    def _go_next_department_page(self):
+        self.current_department_page += 1
+        self._show_departments()
+
+    def _go_previous_department_page(self):
+        self.current_department_page -= 1
+        self._show_departments()
 
     def _create_department_card(self, parent, department, items, row, col):
         card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
@@ -121,14 +156,46 @@ class BrowseEquipmentPage:
             grouped.setdefault(category, [])
             grouped[category].append(item)
 
+        self.current_category_list = list(grouped.items())
+
+        start_index = self.current_category_page * GRID_ITEMS_PER_PAGE
+        end_index = start_index + GRID_ITEMS_PER_PAGE
+        page_categories = self.current_category_list[start_index:end_index]
+
         cards_row = self._generic_grid(self.content_frame)
 
         row, col = 0, 0
-        for category, items in grouped.items():
+        for category, items in page_categories:
             self._create_category_card(cards_row, category, items, row, col)
             col += 1
             if col > 2:
                 col, row = 0, row + 1
+
+        self._category_pagination_controls()
+
+    def _category_pagination_controls(self):
+        total_items = len(self.current_category_list)
+        total_pages = max(1, -(-total_items // GRID_ITEMS_PER_PAGE))
+
+        if total_pages <= 1:
+            return
+
+        nav_frame = tk.Frame(self.content_frame, bg=self.primary_bg)
+        nav_frame.pack(pady=(20, 10))
+
+        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5,state="normal" if self.current_category_page > 0 else "disabled",command=self._go_previous_category_page).pack(side="left", padx=5)
+
+        tk.Label(nav_frame, text=f"Page {self.current_category_page + 1} of {total_pages}", font=("Arial", 12), bg=self.primary_bg, fg="#94A3B8").pack(side="left", padx=15)
+
+        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_category_page < total_pages - 1 else "disabled",command=self._go_next_category_page).pack(side="left", padx=5)
+
+    def _go_next_category_page(self):
+        self.current_category_page += 1
+        self._show_categories(self.current_department, self.current_dept_items)
+
+    def _go_previous_category_page(self):
+        self.current_category_page -= 1
+        self._show_categories(self.current_department, self.current_dept_items)
 
     def _create_category_card(self, parent, category, items, row, col):
         card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
@@ -144,6 +211,10 @@ class BrowseEquipmentPage:
         for widget in (card, name_label, count_label):
             widget.bind("<Button-1>", lambda e, cat=category, its=items: self._show_equipment_by_category(cat, its))
 
+    def _open_department(self, department, items):
+        self.current_category_page = 0
+        self._show_categories(department, items)
+
     def _show_equipment_by_category(self, category, items):
         self.current_category = category
         self.current_items = items
@@ -157,8 +228,8 @@ class BrowseEquipmentPage:
         back_btn = tk.Button(self.content_frame, text="< Back to Categories", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=lambda: self._show_categories(self.current_department, self.current_dept_items))
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
 
-        start_index = self.current_page * ITEMS_PER_PAGE
-        end_index = start_index + ITEMS_PER_PAGE
+        start_index = self.current_page * GRID_ITEMS_PER_PAGE
+        end_index = start_index + GRID_ITEMS_PER_PAGE
         page_items = self.current_items[start_index:end_index]
 
         cards_row = tk.Frame(self.content_frame, bg="#1E293B")
@@ -191,7 +262,7 @@ class BrowseEquipmentPage:
 
     def _pagination_controls(self):
         total_items = len(self.current_items)
-        total_pages = max(1, -(-total_items // ITEMS_PER_PAGE))
+        total_pages = max(1, -(-total_items // GRID_ITEMS_PER_PAGE))
 
         if total_pages <= 1:
             return
@@ -236,7 +307,9 @@ class BrowseEquipmentPage:
         self.category_label = tk.Label(self.modal, text=f"Category: {self.name_category}", font=("Arial", 14), bg="#334155", fg="#94A3B8")
         self.category_label.pack(pady=5)
 
-        self.reserve_btn = tk.Button(self.modal, text="Reserve", font=("Arial", 14, "bold"), bg="#3AFD50", fg="#0F172A", cursor="hand2", command=lambda: self._confirm_reservation(item))
+        is_available = item.get("status") == "Available"
+
+        self.reserve_btn = tk.Button(self.modal, text="Reserve" if is_available else item.get("status", "Unavailable"), font=("Arial", 14, "bold"), bg="#3AFD50" if is_available else "#F87171", fg="#0F172A", cursor="hand2" if is_available else "arrow", state="normal" if is_available else "disabled", disabledforeground="#FFFFFF",command=lambda: self._confirm_reservation(item))
         self.reserve_btn.pack(pady=(80, 5))
 
         self.close_btn = tk.Button(self.modal, text="Close", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", command=self.details_overlay.destroy)

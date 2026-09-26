@@ -80,14 +80,24 @@ Sept 24, 2026 (Thursday)
 Sept 25, 2026 (Friday)
 - Rest Day
 
-Sept 26, 2026 (Saturday | Task)
-- Create Reservation Panel
-- Connect "Reserve" button in Browse Equipment to create new reservation records
-- Build My Reservation page (Pending, Approved/Borrowed sections)
-- Test end-to-end flow: browse equipment → reserve → check dashboard updates
+Sept 26, 2026 (Saturday)
+- Built Add/Edit/Delete CRUD for Department, Category, and Equipment
+  in Admin Manage Inventory
+- Created reusable popup forms (tk.Toplevel) with ttk Comboboxes for
+  category/department/status selection, using a callback pattern
+  (on_save) so the same form works for both Add and Edit
+- Added validation and delete guards (cannot delete a department/category
+  still containing items, cannot delete equipment with active reservations)
+- Fixed pagination bugs: wrong list slicing, and the "Add New" card
+  overflowing past the 3x3 grid instead of appearing on the next page
+- Added Enter key shortcut (bind "<Return>") to submit forms without clicking Save (fixed initial binding on the button instead of the window, so it now works
+  while typing in the entry field)
+- Fixed Reserve button text staying gray instead of white when disabled (unavailable equipment)
+- Fixed a NameError in category card click handler (referenced an
+  undefined 'department' variable instead of 'category')
+- Verified Add/Edit/Delete correctly reflect on the user-side Browse Equipment page
 
-Sept 27, 2026 (Monday | Task)
-- Build basic Admin Dashboard structure (sidebar, navigation)
-- Create Admin Reservation Management page (approve/reject reservations)
-- Create Notification Panel (User side)
-- Connect notifications to reservation status changes
+Sept 27, 2026 (Sunday | Task)
+-
+
+Sept 28, 2026
