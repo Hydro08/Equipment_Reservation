@@ -3,19 +3,34 @@ import threading
 
 from tkinter import messagebox
 
-from Authentication.auth_service import get_pending_reservation, update_reservation_status
+from Authentication.auth_service import (
+    get_pending_reservation,
+    update_reservation_status,
+    get_pending_returns,
+    confirm_return,
+    reject_return,
+)
 
-ITEMS_PER_PAGE = 5
+ITEMS_PER_PAGE = 4
 
 class ManageReservationPage:
 
     primary_bg = "#1E293B"
     primary_fg = "#FFFFFF"
 
+    active_tab_bg = "#4ADE80"
+    active_tab_fg = "#0F172A"
+    inactive_tab_bg = "#334155"
+    inactive_tab_fg = "#FFFFFF"
+
     def __init__(self, parent, colors):
         self.parent = parent
         self.colors = colors
         self.current_page = 0
+        self.mode = "request"
+
+        self.all_reservations = []
+        self.all_returns = []
 
         self._build_ui()
 
@@ -26,27 +41,78 @@ class ManageReservationPage:
         self.title_label = tk.Label(self.manage_reservation_panel, text="Manage Reservation", font=("Arial", 24, "bold"), **self.colors)
         self.title_label.pack(pady=(20, 0))
 
-        self.loading_label = tk.Label(self.manage_reservation_panel, text="Loading...", font=("Arial", 24), **self.colors, height=50)
+        self.tab_frame = tk.Frame(self.manage_reservation_panel, bg=self.primary_bg)
+        self.tab_frame.pack(pady=(15, 0))
+
+        self.request_tab_btn = tk.Button(
+            self.tab_frame, text="Manage Request", font=("Arial", 12, "bold"),
+            cursor="hand2", bd=0, padx=20, pady=8,
+            command=lambda: self._switch_tab("request")
+        )
+        self.request_tab_btn.pack(side="left", padx=5)
+
+        self.return_tab_btn = tk.Button(
+            self.tab_frame, text="Manage Returning", font=("Arial", 12, "bold"),
+            cursor="hand2", bd=0, padx=20, pady=8,
+            command=lambda: self._switch_tab("return")
+        )
+        self.return_tab_btn.pack(side="left", padx=5)
+
+        self.body_frame = tk.Frame(self.manage_reservation_panel, bg=self.primary_bg)
+        self.body_frame.pack(fill="both", expand=True)
+
+        self.content_frame = None
+        self.loading_label = None
+
+        self._update_tab_styles()
+        self._switch_tab("request")
+
+    def _update_tab_styles(self):
+        if self.mode == "request":
+            self.request_tab_btn.config(bg=self.active_tab_bg, fg=self.active_tab_fg)
+            self.return_tab_btn.config(bg=self.inactive_tab_bg, fg=self.inactive_tab_fg)
+        else:
+            self.request_tab_btn.config(bg=self.inactive_tab_bg, fg=self.inactive_tab_fg)
+            self.return_tab_btn.config(bg=self.active_tab_bg, fg=self.active_tab_fg)
+
+    def _switch_tab(self, mode):
+        self.mode = mode
+        self.current_page = 0
+        self._update_tab_styles()
+        self._show_loading_and_fetch()
+
+    def _show_loading_and_fetch(self):
+        for widget in self.body_frame.winfo_children():
+            widget.destroy()
+        self.content_frame = None
+
+        self.loading_label = tk.Label(self.body_frame, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
 
-        threading.Thread(target=self._fetch_reservation_data, daemon=True).start()
+        threading.Thread(target=self._fetch_data, daemon=True).start()
 
-    def _fetch_reservation_data(self):
-        reservations = get_pending_reservation()
-        self.manage_reservation_panel.after(0, self._render_reservations, reservations)
+    def _fetch_data(self):
+        data = get_pending_reservation() if self.mode == "request" else get_pending_returns()
+        self.manage_reservation_panel.after(0, self._on_data_fetched, data)
 
-    def _render_reservations(self, reservations):
-        if not self.loading_label.winfo_exists():
+    def _on_data_fetched(self, data):
+        if not self.loading_label or not self.loading_label.winfo_exists():
             return
 
         self.loading_label.destroy()
-        self.all_reservations = reservations
 
-        self.content_frame = tk.Frame(self.manage_reservation_panel, bg=self.primary_bg)
+        if self.mode == "request":
+            self.all_reservations = data
+        else:
+            self.all_returns = data
+
+        self.content_frame = tk.Frame(self.body_frame, bg=self.primary_bg)
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-        self.current_page = 0
         self._render_page()
+
+    def _current_data(self):
+        return self.all_reservations if self.mode == "request" else self.all_returns
 
     def _clear_content(self):
         for widget in self.content_frame.winfo_children():
@@ -54,20 +120,22 @@ class ManageReservationPage:
 
     def _render_page(self):
         self._clear_content()
+        data = self._current_data()
 
-        if not self.all_reservations:
-            empty_label = tk.Label(self.content_frame, text="No pending reservations.", font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg, height=50)
+        if not data:
+            empty_text = "No pending reservations." if self.mode == "request" else "No pending returns."
+            empty_label = tk.Label(self.content_frame, text=empty_text, font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg, height=50)
             empty_label.pack(pady=20)
             return
 
         start_index = self.current_page * ITEMS_PER_PAGE
         end_index = start_index + ITEMS_PER_PAGE
-        page_item = self.all_reservations[start_index:end_index]
+        page_item = data[start_index:end_index]
 
         for reservation in page_item:
             self._create_reservation_row(reservation)
 
-        self._pagination_controls()
+        self._pagination_controls(len(data))
 
     def _create_reservation_row(self, reservation):
         row = tk.Frame(self.content_frame, bg="#334155")
@@ -95,11 +163,34 @@ class ManageReservationPage:
         button_frame = tk.Frame(row, bg="#334155")
         button_frame.pack(side="right", padx=15, pady=15)
 
-        accept_btn = tk.Button(button_frame, text="Accept", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5, command=lambda: self.handle_decision(reservation, "Approved"))
-        accept_btn.pack(side="left", padx=5)
+        if self.mode == "request":
+            accept_btn = tk.Button(
+                button_frame, text="Accept", font=("Arial", 12, "bold"),
+                bg="#4ADE80", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5,
+                command=lambda: self.handle_decision(reservation, "Approved")
+            )
+            accept_btn.pack(side="left", padx=5)
 
-        reject_btn = tk.Button(button_frame, text="Reject", font=("Arial", 12, "bold"), bg="#F87171", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5, command=lambda: self.handle_decision(reservation, "Rejected"))
-        reject_btn.pack(side="left", padx=5)
+            reject_btn = tk.Button(
+                button_frame, text="Reject", font=("Arial", 12, "bold"),
+                bg="#F87171", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5,
+                command=lambda: self.handle_decision(reservation, "Rejected")
+            )
+            reject_btn.pack(side="left", padx=5)
+        else:
+            confirm_btn = tk.Button(
+                button_frame, text="Confirm Return", font=("Arial", 12, "bold"),
+                bg="#4ADE80", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5,
+                command=lambda: self.handle_return_decision(reservation, True)
+            )
+            confirm_btn.pack(side="left", padx=5)
+
+            not_yet_btn = tk.Button(
+                button_frame, text="Not Yet Returned", font=("Arial", 12, "bold"),
+                bg="#F87171", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5,
+                command=lambda: self.handle_return_decision(reservation, False)
+            )
+            not_yet_btn.pack(side="left", padx=5)
 
     def handle_decision(self, reservation, new_status):
         confirm = messagebox.askyesno(
@@ -117,18 +208,42 @@ class ManageReservationPage:
         else:
             messagebox.showerror("Error", "Failed to update reservation status.")
 
-    def _refresh_after_action(self):
-        self.all_reservations = get_pending_reservation()
+    def handle_return_decision(self, reservation, confirmed):
+        if confirmed:
+            message = "Confirm that this equipment has been physically returned?"
+        else:
+            message = "Mark this as NOT yet returned? This will move the reservation back to Borrowed."
 
-        total_pages = max(1, -(-len(self.all_reservations) // ITEMS_PER_PAGE))
+        confirm = messagebox.askyesno("Confirm", message)
+
+        if not confirm:
+            return
+
+        success = confirm_return(reservation["id"]) if confirmed else reject_return(reservation["id"])
+
+        if success:
+            result_text = "Return confirmed." if confirmed else "Marked as not yet returned."
+            messagebox.showinfo("Success", result_text)
+            self._refresh_after_action()
+        else:
+            messagebox.showerror("Error", "Failed to update return status.")
+
+    def _refresh_after_action(self):
+        data = get_pending_reservation() if self.mode == "request" else get_pending_returns()
+
+        if self.mode == "request":
+            self.all_reservations = data
+        else:
+            self.all_returns = data
+
+        total_pages = max(1, -(-len(data) // ITEMS_PER_PAGE))
 
         if self.current_page >= total_pages:
             self.current_page = total_pages - 1
 
         self._render_page()
 
-    def _pagination_controls(self):
-        total_items = len(self.all_reservations)
+    def _pagination_controls(self, total_items):
         total_pages = max(1, -(-total_items // ITEMS_PER_PAGE))
 
         if total_pages <= 1:

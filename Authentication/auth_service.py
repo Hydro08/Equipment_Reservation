@@ -4,7 +4,7 @@ from tkinter import messagebox
 from typing import Any
 from Database.supabase_client import supabase
 from postgrest import CountMethod
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone, datetime
 
 def login_user(identifier: str, plain_password: str):
     query: Any = supabase.table("users").select("*")
@@ -237,7 +237,7 @@ def update_reservation_status(reservation_id, new_status):
 
 def get_user_reservations(user_id):
     try:
-        query: Any = supabase.table("reservation").select("*, equipment(name, categories(name), departments(name))").eq("user_id", user_id).in_("status", ["Pending", "Approved"])
+        query: Any = supabase.table("reservation").select("*, equipment(name, categories(name), departments(name))").eq("user_id", user_id).in_("status", ["Pending", "Approved", "Returning Pending"])
         response = query.execute()
         return response.data or []
     except Exception as e:
@@ -253,21 +253,58 @@ def cancel_reservation(reservation_id):
         messagebox.showerror("Database Failed", f"Error Cancelling reservation: {e}")
         return False
 
-def return_equipment(reservation_id):
+def request_return(reservation_id):
     try:
-        query: Any = supabase.table("reservation").update({"status": "Returned"}).eq("id", reservation_id).eq("status", "Approved")
+        query: Any = supabase.table("reservation").update(
+            {"status": "Return Pending"}
+        ).eq("id", reservation_id).eq("status", "Approved")
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error requesting return: {e}")
+        return False
+
+def get_pending_returns():
+    try:
+        query: Any = supabase.table("reservation").select(
+            "*, users(username), equipment(name)"
+        ).eq("status", "Return Pending")
+        response = query.execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching pending returns: {e}")
+        return []
+
+def confirm_return(reservation_id):
+    try:
+        query: Any = supabase.table("reservation").update(
+            {"status": "Returned"}
+        ).eq("id", reservation_id).eq("status", "Return Pending")
         response = query.execute()
 
         if not response.data:
             return False
 
         equipment_id = response.data[0]["equipment_id"]
-        equipment_query: Any =supabase.table("equipment").update({"status": "Available"}).eq("id", equipment_id)
-        equipment_query.execute()
+        eq_query: Any = supabase.table("equipment").update(
+            {"status": "Available"}
+        ).eq("id", equipment_id)
+        eq_query.execute()
 
         return True
     except Exception as e:
-        messagebox.showerror("Database Error", f"Error returning equipment: {e}")
+        messagebox.showerror("Database Error", f"Error confirming return: {e}")
+        return False
+
+def reject_return(reservation_id):
+    try:
+        query: Any = supabase.table("reservation").update(
+            {"status": "Approved"}
+        ).eq("id", reservation_id).eq("status", "Return Pending")
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error rejecting return: {e}")
         return False
 
 def get_user_notification(user_id):
@@ -393,4 +430,57 @@ def delete_equipment(equipment_id):
         return bool(response.data)
     except Exception as e:
         messagebox.showerror("Database Error", f"Error deleting equipment: {e}")
+        return False
+
+def verify_current_password(user_id, plain_password):
+    user = get_user_by_id(user_id)
+    if not user:
+        return False
+    stored_hash = user["password_hash"].encode("utf-8")
+    return bcrypt.checkpw(plain_password.encode("utf-8"), stored_hash)
+
+def rehash_user_password_by_id(user_id, plain_password):
+    try:
+        hashed = bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt())
+        hashed_str = hashed.decode("utf-8")
+
+        query: Any = supabase.table("users").update({"password_hash": hashed_str}).eq("id", user_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error updating password: {e}")
+        return False
+
+def can_change_username(user_id):
+    user = get_user_by_id(user_id)
+    if not user:
+        return False, None
+    last_changed = user.get("username_changed_at")
+    if not last_changed:
+        return True, None
+
+    last_changed_dt = datetime.fromisoformat(last_changed.replace("Z", "+00:00"))
+    next_allowed = last_changed_dt + timedelta(days=1)
+    now = datetime.now(timezone.utc)
+
+    if now >= next_allowed:
+        return True, None
+    return False, next_allowed
+
+def change_username(user_id, new_username):
+    try:
+        check: Any = supabase.table("users").select("id").ilike("username", new_username)
+        existing = check.execute()
+        if existing.data:
+            messagebox.showwarning("Duplicate", f"Username '{new_username}' is already taken.")
+            return False
+
+        query: Any = supabase.table("users").update({
+            "username": new_username,
+            "username_changed_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", user_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error changing username: {e}")
         return False

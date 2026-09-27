@@ -1,10 +1,12 @@
 import tkinter as tk
 import threading
 
+from datetime import date
 from tkinter import messagebox
-from Authentication.auth_service import get_user_reservations, cancel_reservation, return_equipment
+from Authentication.auth_service import get_user_reservations, cancel_reservation, request_return
 
 ITEMS_PER_PAGE = 5
+DUE_SOON_DAYS = 1
 
 class ReservationPage:
 
@@ -89,17 +91,68 @@ class ReservationPage:
         tk.Label(info_frame, text=f"Equipment: {equipment_name}", font=("Arial", 14), bg="#334155", fg="#94A3B8",
                  anchor="w").pack(fill="x")
 
+        # Only relevant once it's actually borrowed — Pending/Return Pending
+        # reservations don't need a due date shown yet.
+        if status == "Approved":
+            return_date_display = self._format_display_date(reservation.get("return_date"))
+            tk.Label(info_frame, text=f"Return Date: {return_date_display}", font=("Arial", 11), bg="#334155", fg="#94A3B8", anchor="w").pack(fill="x")
+
+            due_badge = self._get_due_badge(reservation.get("return_date"))
+            if due_badge:
+                badge_text, badge_color = due_badge
+                tk.Label(info_frame, text=badge_text, font=("Arial", 11, "bold"), bg="#334155", fg=badge_color, anchor="w").pack(fill="x")
+
         right_frame = tk.Frame(row, bg="#334155")
         right_frame.pack(side="right", padx=15, pady=15)
 
+        # "Approved" is shown to the user as "Borrowed"; "Return Pending" is
+        # shown as-is so they know their return is awaiting admin confirmation.
         status_display = "Borrowed" if status == "Approved" else status
-        status_color = {"Pending": "#FBBF24", "Borrowed": "#4ADE80"}.get(status_display, "#94A3B8")
+        status_color = {
+            "Pending": "#FBBF24",
+            "Borrowed": "#4ADE80",
+            "Return Pending": "#FBBF24",
+        }.get(status_display, "#94A3B8")
         tk.Label(right_frame, text=status_display, font=("Arial", 12, "bold"), bg="#334155", fg=status_color).pack(side="left", padx=(0, 10))
 
         if status == "Pending":
             tk.Button(right_frame, text="Cancel", font=("Arial", 11, "bold"), bg="#F87171", fg="#0F172A", cursor="hand2", bd=0, padx=12, pady=4, command=lambda: self._handle_cancel(reservation)).pack(side="left")
         elif status == "Approved":
             tk.Button(right_frame, text="Return", font=("Arial", 11, "bold"), bg="#3AFD50", fg="#0F172A", cursor="hand2", bd=0, padx=12, pady=4, command=lambda: self._handle_return(reservation)).pack(side="left")
+        elif status == "Return Pending":
+            tk.Label(right_frame, text="Awaiting confirmation", font=("Arial", 10, "italic"), bg="#334155", fg="#94A3B8").pack(side="left")
+
+    @staticmethod
+    def _format_display_date(return_date_str):
+        if not return_date_str:
+            return "N/A"
+        try:
+            parsed = date.fromisoformat(str(return_date_str)[:10])
+            return parsed.strftime("%m/%d/%Y")
+        except ValueError:
+            return str(return_date_str)
+
+    @staticmethod
+    def _get_due_badge(return_date_str):
+        if not return_date_str:
+            return None
+
+        try:
+            due_date = date.fromisoformat(str(return_date_str)[:10])
+        except ValueError:
+            return None
+
+        days_left = (due_date - date.today()).days
+
+        if days_left < 0:
+            return "Overdue", "#F87171"
+        elif days_left == 0:
+            return "Due Today", "#FBBF24"
+        elif days_left <= DUE_SOON_DAYS:
+            day_label = "day" if days_left == 1 else "days"
+            return f"Due: {days_left} {day_label}", "#FBBF24"
+
+        return None
 
     def _handle_cancel(self, reservation):
         if not messagebox.askyesno("Confirm", "Cancel this reservation?"):
@@ -111,13 +164,13 @@ class ReservationPage:
             messagebox.showerror("Error", "Failed to cancel reservation")
 
     def _handle_return(self, reservation):
-        if not messagebox.askyesno("Confirm", "Mark this equipment as returned?"):
+        if not messagebox.askyesno("Confirm", "Request return for this equipment? An admin will need to confirm it before it's marked as returned."):
             return
-        if return_equipment(reservation["id"]):
-            messagebox.showinfo("Returned", "Equipment marked as returned.")
+        if request_return(reservation["id"]):
+            messagebox.showinfo("Return Requested", "Return requested. Waiting for admin confirmation.")
             self._refresh_after_action()
         else:
-            messagebox.showerror("Error", "Failed to mark as returned.")
+            messagebox.showerror("Error", "Failed to request return.")
 
     def _refresh_after_action(self):
         self.all_reservations = get_user_reservations(self.user["id"])

@@ -254,7 +254,11 @@ class UserDashboard:
             self._loops_btn()
             self.profile_btn.pack(padx=(80, 0))
 
-        ProfilePage(self.right_panel, self.colors)
+        ProfilePage(self.right_panel, self.colors, self.user, self._on_username_updated)
+
+    def _on_username_updated(self, new_username):
+        self.user["username"] = new_username
+        self.user_username.config(text=new_username)
 
     def _update_nav_labels(self, minimized):
         index = 1 if minimized else 0

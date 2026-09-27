@@ -49,9 +49,9 @@ class RegisterWindow:
 
         self._build_login_link()
 
-        self.register_button = tk.Button(self.register_window, text="Register", font=("Arial", 18), width=10, cursor="hand2", **self.colors)
+        self.register_button = tk.Button(self.register_window, text="Register", font=("Arial", 18), width=10, cursor="hand2", **self.colors, command=self.register)
         self.register_button.pack(pady=(20, 0))
-        self.register_button.bind("<Button-1>", lambda event: self.register())
+        self.register_window.bind("<Return>", lambda event: self.register())
 
     def _username_frame(self):
         self.username_panel = tk.Frame(self.register_window, bg=self.primary_bg)

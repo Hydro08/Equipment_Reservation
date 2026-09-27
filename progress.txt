@@ -97,7 +97,20 @@ Sept 26, 2026 (Saturday)
   undefined 'department' variable instead of 'category')
 - Verified Add/Edit/Delete correctly reflect on the user-side Browse Equipment page
 
-Sept 27, 2026 (Sunday | Task)
--
+Sept 27, 2026 (Sunday)
+- Created the user profile page
+- Added change username/password functions in auth_service (verify_current_password, rehash_user_password_by_id, can_change_username, change_username)
+- Added return confirmation functions in auth_service (get_pending_returns, confirm_return, reject_return)
+- Updated the admin's Manage Reservation page, added a Returning section
+- Implemented change username and change password in the profile
+- Added profile info content and stats, like a mini dashboard
+- Updated the user-side Reservation page, added return date display when borrowed
+- Updated the Manage Reservation page from showing 5 rows to 4
+- Updated the Register button to use a key binding instead of requiring a mouse click.
+- Fixed a bug where changing the username left extra space at the top
 
-Sept 28, 2026
+Sept 28, 2026 (Monday | Task)
+- Create Manage Users page
+
+Sept 29, 2026 (Tuesday | Task)
+- Create Reports page
