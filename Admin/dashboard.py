@@ -169,13 +169,13 @@ class AdminDashboard:
         self.cards_frame.grid_rowconfigure(1, weight=1)
         self.cards_frame.grid_rowconfigure(2, weight=1)
 
-        self._create_card(self.cards_frame, "Total Equipment", str(summary["total_equipment"]), row=0, column=0)
-        self._create_card(self.cards_frame, "Total Users", str(summary["total_users"]), row=0, column=1)
-        self._create_card(self.cards_frame, "Pending", str(summary["pending"]), row=1, column=0)
+        self._create_card(self.cards_frame, "Total Equipment", str(summary["total_equipment"]), row=0, column=0, on_click=lambda: self._navigate_to(self.manage_inventory_btn))
+        self._create_card(self.cards_frame, "Total Users", str(summary["total_users"]), row=0, column=1, on_click=lambda: self._navigate_to(self.manage_users_btn))
+        self._create_card(self.cards_frame, "Pending", str(summary["pending"]), row=1, column=0, on_click=lambda: self._navigate_to(self.manage_reservation_btn))
         self._create_card(self.cards_frame, "Borrowed Equipment", str(summary["borrowed"]), row=1, column=1)
-        self._create_card(self.cards_frame, "Available Equipment", str(summary["available"]), row=2, column=0)
+        self._create_card(self.cards_frame, "Available Equipment", str(summary["available"]), row=2, column=0,          on_click=lambda: self._navigate_to(self.manage_inventory_btn))
 
-    def _create_card(self, parent, title, value, row, column):
+    def _create_card(self, parent, title, value, row, column, on_click=None):
         card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
         card.grid(row=row, column=column, padx=15, pady=15, sticky="nsew")
         card.grid_propagate(False)
@@ -184,6 +184,11 @@ class AdminDashboard:
         value_label.pack(pady=(60, 20))
         title_label = tk.Label(card, text=title, font=("Arial", 24), bg="#334155", fg="#94A3BB")
         title_label.pack(pady=(30, 10))
+
+        if on_click:
+            for widget in (card, value_label, title_label):
+                widget.config(cursor="hand2")
+                widget.bind("<Button-1>", lambda e: on_click())
 
     def toggle_sidebar(self):
         if self.is_left_panel_minimized:
@@ -219,32 +224,33 @@ class AdminDashboard:
             btn.config(text=labels[index])
 
     def _on_nav_click(self, event):
-        clicked_button = event.widget
-        self.active_btn = clicked_button
+        self._navigate_to(event.widget)
+
+    def _navigate_to(self, target_btn):
+        self.active_btn = target_btn
 
         self._highlight_active_button()
 
         if self.is_left_panel_minimized:
-            clicked_button.pack_configure(padx=(0, 0))
+            target_btn.pack_configure(padx=(0, 0))
 
         if not self.is_left_panel_minimized:
-            clicked_button.pack_configure(padx=(80, 0))
+            target_btn.pack_configure(padx=(80, 0))
         else:
-            for btn in (
-            self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn, self.manage_users_btn,
-            self.reports_btn):
+            for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn,
+                        self.manage_users_btn, self.reports_btn):
                 btn.config(bg=self.primary_bg)
-                clicked_button.config(bg="#334155")
+            target_btn.config(bg="#334155")
 
-        if clicked_button == self.dashboard_btn:
+        if target_btn == self.dashboard_btn:
             self._show_dashboard()
-        elif clicked_button == self.manage_reservation_btn:
+        elif target_btn == self.manage_reservation_btn:
             self._show_manage_reservation_page()
-        elif clicked_button == self.manage_inventory_btn:
+        elif target_btn == self.manage_inventory_btn:
             self._show_manage_inventory_page()
-        elif clicked_button == self.manage_users_btn:
+        elif target_btn == self.manage_users_btn:
             self._show_manage_users_page()
-        elif clicked_button == self.reports_btn:
+        elif target_btn == self.reports_btn:
             self._show_reports_page()
 
     def _highlight_active_button(self):

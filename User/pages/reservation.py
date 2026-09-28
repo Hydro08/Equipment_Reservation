@@ -73,7 +73,10 @@ class ReservationPage:
         self._pagination_controls()
 
     def create_reservation_row(self, reservation):
-        row = tk.Frame(self.content_frame, bg="#334155")
+        bg = "#334155"
+        muted = "#94A3B8"
+
+        row = tk.Frame(self.content_frame, bg=bg)
         row.pack(fill="x", padx=10, pady=6)
 
         equipment_data = reservation.get("equipment") or {}
@@ -82,45 +85,41 @@ class ReservationPage:
         department_name = (equipment_data.get("departments") or {}).get("name", "N/A")
         status = reservation.get("status", "Pending")
 
-        info_frame = tk.Frame(row, bg="#334155")
-        info_frame.pack(side="left", fill="x", expand=True, padx=15, pady=15)
+        content = tk.Frame(row, bg=bg)
+        content.pack(fill="x", padx=15, pady=15)
+        content.grid_columnconfigure(0, weight=1)
+        content.grid_columnconfigure(1, minsize=260)
 
-        tk.Label(info_frame, text=f"Department: {department_name}", font=("Arial", 11), bg="#334155", fg="#94A3B8", anchor="w").pack(fill="x")
-        tk.Label(info_frame, text=f"Category: {category_name}", font=("Arial", 11), bg="#334155", fg="#94A3B8",
-                 anchor="w").pack(fill="x")
-        tk.Label(info_frame, text=f"Equipment: {equipment_name}", font=("Arial", 14), bg="#334155", fg="#94A3B8",
-                 anchor="w").pack(fill="x")
+        tk.Label(content, text=f"Department: {department_name}", font=("Arial", 11), bg=bg, fg=muted, anchor="w").grid(row=0, column=0, sticky="w")
+        tk.Label(content, text=f"Category: {category_name}", font=("Arial", 11), bg=bg, fg=muted, anchor="w").grid(row=1, column=0, sticky="w")
+        tk.Label(content, text=f"Equipment: {equipment_name}", font=("Arial", 14), bg=bg, fg=muted, anchor="w").grid(row=2, column=0, sticky="w")
 
-        # Only relevant once it's actually borrowed — Pending/Return Pending
-        # reservations don't need a due date shown yet.
-        if status == "Approved":
-            return_date_display = self._format_display_date(reservation.get("return_date"))
-            tk.Label(info_frame, text=f"Return Date: {return_date_display}", font=("Arial", 11), bg="#334155", fg="#94A3B8", anchor="w").pack(fill="x")
-
-            due_badge = self._get_due_badge(reservation.get("return_date"))
-            if due_badge:
-                badge_text, badge_color = due_badge
-                tk.Label(info_frame, text=badge_text, font=("Arial", 11, "bold"), bg="#334155", fg=badge_color, anchor="w").pack(fill="x")
-
-        right_frame = tk.Frame(row, bg="#334155")
-        right_frame.pack(side="right", padx=15, pady=15)
-
-        # "Approved" is shown to the user as "Borrowed"; "Return Pending" is
-        # shown as-is so they know their return is awaiting admin confirmation.
         status_display = "Borrowed" if status == "Approved" else status
         status_color = {
             "Pending": "#FBBF24",
             "Borrowed": "#4ADE80",
             "Return Pending": "#FBBF24",
-        }.get(status_display, "#94A3B8")
-        tk.Label(right_frame, text=status_display, font=("Arial", 12, "bold"), bg="#334155", fg=status_color).pack(side="left", padx=(0, 10))
+        }.get(status_display, muted)
+
+        if status == "Approved":
+            tk.Label(content, text=status_display, font=("Arial", 12, "bold"), bg=bg, fg=status_color, anchor="w").grid(row=0, column=1, sticky="w", padx=20)
+
+            return_date_display = self._format_display_date(reservation.get("return_date"))
+            tk.Label(content, text=f"Return Date: {return_date_display}", font=("Arial", 11), bg=bg, fg=muted, anchor="w").grid(row=1, column=1, sticky="w", padx=20)
+
+            due_badge = self._get_due_badge(reservation.get("return_date"))
+            if due_badge:
+                badge_text, badge_color = due_badge
+                tk.Label(content, text=badge_text, font=("Arial", 11, "bold"), bg=bg, fg=badge_color, anchor="w").grid(row=2, column=1, sticky="w", padx=20)
+        else:
+            tk.Label(content, text=status_display, font=("Arial", 12, "bold"), bg=bg, fg=status_color, anchor="w").grid(row=1, column=1, sticky="w", padx=20)
 
         if status == "Pending":
-            tk.Button(right_frame, text="Cancel", font=("Arial", 11, "bold"), bg="#F87171", fg="#0F172A", cursor="hand2", bd=0, padx=12, pady=4, command=lambda: self._handle_cancel(reservation)).pack(side="left")
+            tk.Button(content, text="Cancel", font=("Arial", 11, "bold"), bg="#F87171", fg="#0F172A", cursor="hand2", bd=0, padx=12, pady=4, command=lambda: self._handle_cancel(reservation)).grid(row=0, column=2, rowspan=3, sticky="e", padx=(20, 0))
         elif status == "Approved":
-            tk.Button(right_frame, text="Return", font=("Arial", 11, "bold"), bg="#3AFD50", fg="#0F172A", cursor="hand2", bd=0, padx=12, pady=4, command=lambda: self._handle_return(reservation)).pack(side="left")
+            tk.Button(content, text="Return", font=("Arial", 11, "bold"), bg="#3AFD50", fg="#0F172A", cursor="hand2", bd=0, padx=12, pady=4, command=lambda: self._handle_return(reservation)).grid(row=0, column=2, rowspan=3, sticky="e", padx=(20, 0))
         elif status == "Return Pending":
-            tk.Label(right_frame, text="Awaiting confirmation", font=("Arial", 10, "italic"), bg="#334155", fg="#94A3B8").pack(side="left")
+            tk.Label(content, text="Awaiting confirmation", font=("Arial", 10, "italic"), bg=bg, fg=muted).grid(row=0, column=2, rowspan=3, sticky="e", padx=(20, 0))
 
     @staticmethod
     def _format_display_date(return_date_str):

@@ -109,8 +109,12 @@ Sept 27, 2026 (Sunday)
 - Updated the Register button to use a key binding instead of requiring a mouse click.
 - Fixed a bug where changing the username left extra space at the top
 
-Sept 28, 2026 (Monday | Task)
-- Create Manage Users page
+Sept 28, 2026 (Monday)
+- Redesigned the user-side My Reservation row into a 3-column layout
+  (equipment details, return date/due/status, action button)
+- Added Due Soon / Due Today / Overdue badges based on return date
+- Added Ctrl + BackSpace binding to clear the entry field in Manage Inventory forms
 
 Sept 29, 2026 (Tuesday | Task)
+- Create Manage Users page
 - Create Reports page

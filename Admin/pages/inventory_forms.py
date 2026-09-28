@@ -24,6 +24,7 @@ class DepartmentForm(tk.Toplevel):
         entry = tk.Entry(self, textvariable=self.name_var, width=30, font=("Arial", 12),
                          bg=PANEL, fg=FG, insertbackground=FG, relief="flat")
         entry.grid(row=1, column=0, padx=20, pady=(0, 20), ipady=4)
+        entry.bind("<Control-BackSpace>", self.clear_entry)
 
         btn_frame = tk.Frame(self, bg=BG)
         btn_frame.grid(row=2, column=0, pady=(0, 20))
@@ -48,6 +49,14 @@ class DepartmentForm(tk.Toplevel):
         y = (screen_height - DEPT_CATE_HEIGHT) //2
         self.geometry(f"{DEPT_CATE_WIDTH}x{DEPT_CATE_HEIGHT}+{x}+{y}")
 
+    @staticmethod
+    def clear_entry(event):
+        entry = event.widget
+
+        entry.delete(0, tk.END)
+
+        return "break"
+
 class CategoryForm(tk.Toplevel):
     def __init__(self, parent, on_save, initial_name=""):
         super().__init__(parent, bg=BG)
@@ -63,6 +72,7 @@ class CategoryForm(tk.Toplevel):
         self.name_var = tk.StringVar(value=initial_name)
         entry = tk.Entry(self, textvariable=self.name_var, width=30, font=("Arial", 12), bg=PANEL, fg=FG, insertbackground=FG, relief="flat")
         entry.grid(row=1, column=0, padx=20, pady=(0, 20), ipady=4)
+        entry.bind("<Control-BackSpace>", self.clear_entry)
 
         btn_frame = tk.Frame(self, bg=BG)
         btn_frame.grid(row=2, column=0, pady=(0, 20))
@@ -85,6 +95,14 @@ class CategoryForm(tk.Toplevel):
         x = (screen_width - DEPT_CATE_WIDTH) // 2
         y = (screen_height - DEPT_CATE_HEIGHT) //2
         self.geometry(f"{DEPT_CATE_WIDTH}x{DEPT_CATE_HEIGHT}+{x}+{y}")
+
+    @staticmethod
+    def clear_entry(event):
+        entry = event.widget
+
+        entry.delete(0, tk.END)
+
+        return "break"
 
 class EquipmentForm(tk.Toplevel):
     STATUSES = ["Available", "Unavailable"]
@@ -110,7 +128,9 @@ class EquipmentForm(tk.Toplevel):
 
         tk.Label(self, text="Name", font=("Arial", 13), bg=BG, fg=FG).grid(row=0, column=0, padx=20, pady=(20, 6), sticky="w")
         self.name_var = tk.StringVar(value=item.get("name", ""))
-        tk.Entry(self, textvariable=self.name_var, width=28, font=("Arial", 12), bg=PANEL, fg=FG, insertbackground=FG, relief="flat").grid(row=1, column=0, padx=20, pady=(0, 12), ipady=4)
+        name_entry = tk.Entry(self, textvariable=self.name_var, width=28, font=("Arial", 12), bg=PANEL, fg=FG, insertbackground=FG, relief="flat")
+        name_entry.grid(row=1, column=0, padx=20, pady=(0, 12), ipady=4)
+        name_entry.bind("<Control-BackSpace>", self.clear_entry)
 
         tk.Label(self, text="Category", font=("Arial", 13), bg=BG, fg=FG).grid(row=2, column=0, padx=20, pady=(0, 6), sticky="w")
         self.category_var = tk.StringVar(value=category_name)
@@ -130,6 +150,8 @@ class EquipmentForm(tk.Toplevel):
         tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=PANEL, fg=FG, command=self.destroy, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
         self.grab_set()
         self.bind("<Return>", lambda e: self._save())
+
+
 
     def _save(self):
         name = self.name_var.get().strip()
@@ -161,3 +183,11 @@ class EquipmentForm(tk.Toplevel):
         x = (screen_width - self.width) // 2
         y = (screen_height - self.height) //2
         self.geometry(f"{self.width}x{self.height}+{x}+{y}")
+
+    @staticmethod
+    def clear_entry(event):
+        entry = event.widget
+
+        entry.delete(0, tk.END)
+
+        return "break"
