@@ -5,9 +5,7 @@ from tkinter import messagebox
 
 from Admin.pages.inventory_forms import DepartmentForm, CategoryForm, EquipmentForm
 from Authentication.auth_service import (
-    get_all_equipment, get_all_departments, get_all_categories,
-    add_department, update_department, delete_department,
-    add_category, update_category, delete_category,
+    get_all_equipment, get_all_departments, get_all_categories, get_categories_by_department, add_department, update_department, delete_department, add_category, update_category, delete_category,
     add_equipment, update_equipment, delete_equipment, equipment_has_active_reservation,
 )
 
@@ -125,6 +123,7 @@ class ManageInventoryPage:
 
     def _refresh_after_category_change(self):
         self._refresh_data()
+        self.department_categories = get_categories_by_department(self.current_department_id)
         self.current_dept_items = self._equipment_for_department(self.current_department)
         self.current_category_page = 0
         self._show_categories(self.current_department, self.current_dept_items)
@@ -187,6 +186,7 @@ class ManageInventoryPage:
         self._show_departments()
 
     def _create_department_card(self, parent, department, items, row, col):
+        dept_obj = self._department_by_name(department)
         card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
         card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         card.grid_propagate(False)
@@ -202,10 +202,12 @@ class ManageInventoryPage:
         count_label.pack(pady=(0, 10))
 
         for widget in (card, name_label, count_label):
-            widget.bind("<Button-1>", lambda e, d=department, its=items: self._open_department(d, its))
+            widget.bind("<Button-1>", lambda e, d=department, its=items, dept_id=dept_obj["id"] if dept_obj else None: self._open_department(d, its, dept_id))
 
-    def _open_department(self, department, items):
+    def _open_department(self, department, items, department_id):
+        self.current_department_id = department_id
         self.current_category_page = 0
+        self.department_categories = get_categories_by_department(department_id)
         self._show_categories(department, items)
 
     def _show_categories(self, department, dept_items):
@@ -217,7 +219,7 @@ class ManageInventoryPage:
         back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg=self.primary_bg, fg=self.primary_fg, cursor="hand2", bd=0, command=self._show_departments)
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
 
-        grouped = {cat["name"]: [] for cat in self.all_categories}
+        grouped = {cat["name"]: [] for cat in self.department_categories}
 
         for item in dept_items:
             category_data = item.get("categories")
@@ -333,12 +335,18 @@ class ManageInventoryPage:
         ))
 
         name_label = tk.Label(self.card, text=item["name"], font=("Arial", 16, "bold"), bg="#334155", fg="#FFFFFF")
-        name_label.pack(pady=(30, 30))
+        name_label.pack(pady=(30, 20))
 
         status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155", fg="#4ADE80" if item["status"] == "Available" else "#F87171")
         status_label.pack(pady=(0, 10))
 
-    def _paginate_with_add_card(self, entries, current_page):
+        condition = item.get("condition", "Good")
+        condition_color = {"Good": "#4ADE80", "Fair": "#FBBF24"}.get(condition, "#F87171")
+        condition_label = tk.Label(self.card, text=f"Condition: {condition}", font=("Arial", 13), bg="#334155", fg=condition_color)
+        condition_label.pack()
+
+    @staticmethod
+    def _paginate_with_add_card(entries, current_page):
         total_items = len(entries)
         total_slots = total_items + 1
         total_pages = max(1, -(-total_slots // GRID_ITEMS_PER_PAGE))
@@ -409,7 +417,7 @@ class ManageInventoryPage:
         CategoryForm(self.content_frame, on_save=self._handle_add_category)
 
     def _handle_add_category(self, name):
-        if add_category(name):
+        if add_category(name, self.current_department_id):
             self._refresh_after_category_change()
 
     def _open_edit_category_form(self, category_name):
@@ -434,14 +442,20 @@ class ManageInventoryPage:
                 self._refresh_after_category_change()
 
     def _open_add_equipment_form(self):
-        EquipmentForm(self.content_frame, self.all_categories, self.all_departments, on_save=self._handle_add_equipment)
+        category_obj = self._category_by_name_in_list(self.department_categories, self.current_category)
+        EquipmentForm(self.content_frame, self.current_department, self.current_category, self.current_department_id, category_obj["id"], on_save=self._handle_add_equipment)
 
     def _handle_add_equipment(self, data):
-        if add_equipment(data["name"], data["category_id"], data["department_id"], data["status"]):
+        if add_equipment(data["name"], data["category_id"], data["department_id"], data["status"], data["condition"]):
             self._refresh_after_equipment_change()
 
     def _open_edit_equipment_form(self, item):
-        EquipmentForm(self.content_frame, self.all_categories, self.all_departments, on_save=lambda data: self._handle_update_equipment(item["id"], data), item=item)
+        category_obj = self._category_by_name_in_list(self.department_categories, self.current_category)
+        EquipmentForm(self.content_frame, self.current_department, self.current_category, self.current_department_id, category_obj["id"], on_save=lambda data: self._handle_update_equipment(item["id"], data), item=item)
+
+    @staticmethod
+    def _category_by_name_in_list(categories, name):
+        return next((c for c in categories if c["name"] == name), None)
 
     def _handle_update_equipment(self, equipment_id, data):
         if update_equipment(equipment_id, data):

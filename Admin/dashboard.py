@@ -170,10 +170,14 @@ class AdminDashboard:
         self.cards_frame.grid_rowconfigure(2, weight=1)
 
         self._create_card(self.cards_frame, "Total Equipment", str(summary["total_equipment"]), row=0, column=0, on_click=lambda: self._navigate_to(self.manage_inventory_btn))
+
         self._create_card(self.cards_frame, "Total Users", str(summary["total_users"]), row=0, column=1, on_click=lambda: self._navigate_to(self.manage_users_btn))
-        self._create_card(self.cards_frame, "Pending", str(summary["pending"]), row=1, column=0, on_click=lambda: self._navigate_to(self.manage_reservation_btn))
-        self._create_card(self.cards_frame, "Borrowed Equipment", str(summary["borrowed"]), row=1, column=1)
-        self._create_card(self.cards_frame, "Available Equipment", str(summary["available"]), row=2, column=0,          on_click=lambda: self._navigate_to(self.manage_inventory_btn))
+
+        self._create_card(self.cards_frame, "Pending", str(summary["pending"]), row=1, column=0, on_click=lambda: self._navigate_to(self.manage_reservation_btn, tab="request"))
+
+        self._create_card(self.cards_frame, "Borrowed Equipment", str(summary["borrowed"]), row=1, column=1, on_click=lambda: self._navigate_to(self.manage_reservation_btn, tab="borrowed"))
+
+        self._create_card(self.cards_frame, "Available Equipment", str(summary["available"]), row=2, column=0,          on_click=lambda: self._navigate_to(self.manage_reservation_btn, tab="available"))
 
     def _create_card(self, parent, title, value, row, column, on_click=None):
         card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
@@ -226,7 +230,7 @@ class AdminDashboard:
     def _on_nav_click(self, event):
         self._navigate_to(event.widget)
 
-    def _navigate_to(self, target_btn):
+    def _navigate_to(self, target_btn, tab=None):
         self.active_btn = target_btn
 
         self._highlight_active_button()
@@ -245,7 +249,7 @@ class AdminDashboard:
         if target_btn == self.dashboard_btn:
             self._show_dashboard()
         elif target_btn == self.manage_reservation_btn:
-            self._show_manage_reservation_page()
+            self._show_manage_reservation_page(tab)
         elif target_btn == self.manage_inventory_btn:
             self._show_manage_inventory_page()
         elif target_btn == self.manage_users_btn:
@@ -271,10 +275,10 @@ class AdminDashboard:
         for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn, self.manage_users_btn, self.reports_btn):
             btn.pack_configure(padx=(0, 0))
 
-    def _show_manage_reservation_page(self):
+    def _show_manage_reservation_page(self, tab=None):
         self.admin_window.title(f"{self.w_manage_reservation_title} - {self.app_name}")
         self._clear_right_panel()
-        ManageReservationPage(self.right_panel, self.colors)
+        ManageReservationPage(self.right_panel, self.colors, initial_tab=tab or "request")
 
     def _show_manage_inventory_page(self):
         self.admin_window.title(f"{self.w_manage_inventory_title} - {self.app_name}")

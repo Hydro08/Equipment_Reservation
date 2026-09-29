@@ -1,6 +1,7 @@
 import tkinter as tk
 import threading
 
+from datetime import datetime, timezone, date
 from tkinter import messagebox
 from Authentication.auth_service import get_user_notification,dismiss_notification
 
@@ -53,7 +54,16 @@ class NotificationPage:
             tk.Label(self.content_frame, text="No Notifications yet.", font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg, height=50).pack(pady=20)
             return
 
-        for note in self.all_notifications:
+        oldest = datetime.min.replace(tzinfo=timezone.utc)
+        dated = [(self._parse_dt(n.get("status_updated_at")), n) for n in self.all_notifications]
+        dated.sort(key=lambda pair: pair[0] or oldest, reverse=True)
+
+        last_label = None
+        for dt, note in dated:
+            label = self._date_label(dt)
+            if label != last_label:
+                tk.Label(self.content_frame, text=label, font=("Arial", 14, "bold"), bg=self.primary_bg, fg="#94A3B8").pack(anchor="w", padx=15, pady=(15, 0))
+                last_label = label
             self._create_notification_row(note)
 
     def _create_notification_row(self, note):
@@ -85,3 +95,29 @@ class NotificationPage:
             self._render_list()
         else:
             messagebox.showerror("Error", "Failed to delete notification.")
+
+    @staticmethod
+    def _parse_dt(value):
+        if not value:
+            return None
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone()
+
+    @staticmethod
+    def _date_label(dt):
+        if dt is None:
+            return "Earlier"
+
+        now = datetime.now().astimezone()
+        if (now - dt).total_seconds() < 300:
+            return "Just now"
+
+        days = (date.today() - dt.date()).days
+        if days <= 0:
+            return "Today"
+        if days == 1:
+            return "Yesterday"
+        if days < 7:
+            return f"{days} days ago"
+        if days < 14:
+            return "Last week"
+        return dt.strftime("%b %d, %Y")

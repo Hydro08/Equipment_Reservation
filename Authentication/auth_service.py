@@ -161,13 +161,28 @@ def get_all_equipment():
         messagebox.showerror("Database Error", f"Error Fetching equipment: {e}")
         return []
 
+def get_categories_by_department(department_id):
+    try:
+        query: Any = supabase.table("categories").select("*").eq("department_id", department_id)
+        response = query.execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching categories: {e}")
+        return []
+
 def create_reservation(user_id, equipment_id, reserved_date, return_date):
     try:
-        equipment_check: Any = supabase.table("equipment").select("status").eq("id", equipment_id)
+        equipment_check: Any = supabase.table("equipment").select("status, condition").eq("id", equipment_id)
         equipment = equipment_check.execute()
 
-        if not equipment.data or equipment.data[0]["status"] != "Available":
+        if not equipment.data:
             return "unavailable"
+
+        item = equipment.data[0]
+        if item["status"] != "Available":
+            return "unavailable"
+        if item.get("condition") in ("Damaged", "Under Repair"):
+            return "damaged"
 
         duplicate_query: Any = supabase.table("reservation").select("id").eq("user_id", user_id).eq("equipment_id", equipment_id).eq("status", "Pending")
         duplicate = duplicate_query.execute()
@@ -191,7 +206,8 @@ def create_reservation(user_id, equipment_id, reserved_date, return_date):
 
 def get_pending_reservation():
     try:
-        response_query: Any = supabase.table("reservation").select("*, users(username), equipment(name)").eq("status", "Pending")
+        # noinspection PyUnresolvedReferences
+        response_query: Any = supabase.table("reservation").select("*, users(username), equipment(name)").eq("status", "Pending").order("id", desc=False)
         response = response_query.execute()
         return response.data or []
     except Exception as e:
@@ -200,7 +216,12 @@ def get_pending_reservation():
 
 def update_reservation_status(reservation_id, new_status):
     try:
-        response_query: Any = supabase.table("reservation").update({"status": new_status}).eq("id", reservation_id)
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        response_query: Any = supabase.table("reservation").update({
+            "status": new_status,
+            "status_updated_at": now_iso,
+        }).eq("id", reservation_id)
         response = response_query.execute()
 
         if not response.data:
@@ -215,12 +236,15 @@ def update_reservation_status(reservation_id, new_status):
             if not eq_response.data:
                 messagebox.showerror("Database Error", "Reservation was approved, but equipment status was not updated.")
 
-            others_query: Any = supabase.table("reservation").select("id").eq("equipment_id", equipment_id).eq("status","Pending").neq("id", reservation_id)
+            others_query: Any = supabase.table("reservation").select("id").eq("equipment_id", equipment_id).eq("status", "Pending").neq("id", reservation_id)
             others = others_query.execute()
 
             if others.data:
                 other_ids = [row["id"] for row in others.data]
-                update_query: Any = supabase.table("reservation").update({"status": "Rejected"}).in_("id", other_ids)
+                update_query: Any = supabase.table("reservation").update({
+                    "status": "Rejected",
+                    "status_updated_at": now_iso,
+                }).in_("id", other_ids)
                 update_query.execute()
         elif new_status == "Rejected":
             approved_check: Any = supabase.table("reservation").select("id").eq("equipment_id", equipment_id).eq("status", "Approved")
@@ -237,7 +261,7 @@ def update_reservation_status(reservation_id, new_status):
 
 def get_user_reservations(user_id):
     try:
-        query: Any = supabase.table("reservation").select("*, equipment(name, categories(name), departments(name))").eq("user_id", user_id).in_("status", ["Pending", "Approved", "Returning Pending"])
+        query: Any = supabase.table("reservation").select("*, equipment(name, categories(name), departments(name))").eq("user_id", user_id).in_("status", ["Pending", "Approved", "Return Pending"])
         response = query.execute()
         return response.data or []
     except Exception as e:
@@ -307,6 +331,25 @@ def reject_return(reservation_id):
         messagebox.showerror("Database Error", f"Error rejecting return: {e}")
         return False
 
+def get_available_equipment():
+    try:
+        query: Any = supabase.table("equipment").select("*, categories(name), departments(name)").eq("status", "Available")
+        response = query.execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching available equipment: {e}")
+        return []
+
+def get_borrowed_reservations():
+    try:
+        # noinspection PyUnresolvedReferences
+        query: Any = supabase.table("reservation").select("*, users(username), equipment(name)").eq("status", "Approved").order("id", desc=False)
+        response = query.execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching borrowed reservations: {e}")
+        return []
+
 def get_user_notification(user_id):
     try:
         query: Any = supabase.table("reservation").select("*, equipment(name)").eq("user_id", user_id).in_("status", ["Approved", "Rejected"]).eq("notification_seen", False)
@@ -358,15 +401,15 @@ def delete_department(department_id):
         messagebox.showerror("Database Error", f"Error deleting departments: {e}")
         return False
 
-def add_category(name):
+def add_category(name, department_id):
     try:
-        check: Any = supabase.table("categories").select("id").ilike("name", name)
+        check: Any = supabase.table("categories").select("id").eq("department_id", department_id).ilike("name", name)
         existing = check.execute()
         if existing.data:
             messagebox.showwarning("Duplicate", f"Category '{name}' already exists.")
             return False
 
-        query: Any = supabase.table("categories").insert({"name": name})
+        query: Any = supabase.table("categories").insert({"name": name, "department_id": department_id})
         response = query.execute()
         return bool(response.data)
     except Exception as e:
@@ -391,13 +434,14 @@ def delete_category(category_id):
         messagebox.showerror("Database Error", f"Error deleting category: {e}")
         return False
 
-def add_equipment(name, category_id, department_id, status="Available"):
+def add_equipment(name, category_id, department_id, status="Available", condition="Good"):
     try:
         query: Any = supabase.table("equipment").insert({
             "name": name,
             "category_id": category_id,
             "department_id": department_id,
-            "status": status
+            "status": status,
+            "condition": condition
         })
         response = query.execute()
         return bool(response.data)
@@ -409,7 +453,19 @@ def update_equipment(equipment_id, data):
     try:
         query: Any = supabase.table("equipment").update(data).eq("id", equipment_id)
         response = query.execute()
-        return bool(response.data)
+
+        if not response.data:
+            return False
+
+        if data.get("condition") in ("Damaged", "Under Repair"):
+            reject_query: Any = supabase.table("reservation").update({
+                "status": "Rejected",
+                "status_updated_at": datetime.now(timezone.utc).isoformat(),
+                "notification_seen": False,
+            }).eq("equipment_id", equipment_id).eq("status", "Pending")
+            reject_query.execute()
+
+        return True
     except Exception as e:
         messagebox.showerror("Database Error", f"Error updating equipment: {e}")
         return False
@@ -484,3 +540,4 @@ def change_username(user_id, new_username):
     except Exception as e:
         messagebox.showerror("Database Error", f"Error changing username: {e}")
         return False
+

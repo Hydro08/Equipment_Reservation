@@ -66,6 +66,8 @@ class BrowseEquipmentPage:
         self._clear_content()
         self.title_label.config(text="Browse Equipment")
 
+        self.all_equipment = get_all_equipment()
+
         if not self.all_departments:
             empty_label = tk.Label(self.content_frame, text="No departments found.", font=("Arial", 24), bg="#1E293B", fg="#94A3B8", height=50)
             empty_label.pack(pady=20)
@@ -132,7 +134,7 @@ class BrowseEquipmentPage:
         count_label.pack(pady=(0, 10))
 
         for widget in (card, name_label, count_label):
-            widget.bind("<Button-1>", lambda e, d=department, its=items: self._show_categories(d, its))
+            widget.bind("<Button-1>", lambda e, d=department, its=items: self._open_department(d, its))
 
     def _show_categories(self, department, dept_items):
         self.current_department = department
@@ -143,12 +145,12 @@ class BrowseEquipmentPage:
         back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=self._show_departments)
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
 
-        if not self.all_categories:
+        if not self.department_categories:
             empty_label = tk.Label(self.content_frame, text="No categories found.", font=("Arial", 14), bg="#1E293B", fg="#94A3B8")
             empty_label.pack(pady=20)
             return
 
-        grouped = {cat["name"]: [] for cat in self.all_categories}
+        grouped = {cat["name"]: [] for cat in self.department_categories}
 
         for item in dept_items:
             category_data = item.get("categories")
@@ -212,7 +214,13 @@ class BrowseEquipmentPage:
             widget.bind("<Button-1>", lambda e, cat=category, its=items: self._show_equipment_by_category(cat, its))
 
     def _open_department(self, department, items):
+        dept = next((d for d in self.all_departments if d["name"] == department), None)
+        self.current_department_id = dept["id"] if dept else None
         self.current_category_page = 0
+        self.department_categories = [
+            c for c in self.all_categories
+            if dept and c["department_id"] == dept["id"]
+        ]
         self._show_categories(department, items)
 
     def _show_equipment_by_category(self, category, items):
@@ -221,12 +229,44 @@ class BrowseEquipmentPage:
         self.current_page = 0
         self._render_category_page()
 
+    def _create_equipment_card(self, parent, item, row, col):
+        self.card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
+        self.card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+        self.card.grid_propagate(False)
+
+        name_label = tk.Label(self.card, text=item["name"], font=("Arial", 16, "bold"), bg="#334155", fg="#FFFFFF")
+        name_label.pack(pady=(30, 30))
+
+        status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155", fg="#4ADE80" if item["status"] == "Available" else "#F87171")
+        status_label.pack(pady=(0, 10))
+
+        condition_label = tk.Label(self.card, text=f"Condition: {item.get("condition", "Good")}", font=("Arial", 14), bg="#334155", fg="#4ADE80" if item["condition"] == "Good" and "Fair" else "#94A3B8")
+        condition_label.pack(pady=5)
+
+        for widget in (self.card, name_label, status_label):
+            widget.bind("<Button-1>", lambda e, it=item: self._show_equipment_details(it))
+
     def _render_category_page(self):
+        self.all_equipment = get_all_equipment()
+        self.current_dept_items = [
+            i for i in self.all_equipment
+            if i.get("department_id") == self.current_department_id
+        ]
+        self.current_items = [
+            i for i in self.current_dept_items
+            if (i.get("categories") or {}).get("name") == self.current_category
+        ]
+
         self._clear_content()
         self.title_label.config(text=f"Browse Equipment - {self.current_department} - {self.current_category}")
 
         back_btn = tk.Button(self.content_frame, text="< Back to Categories", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=lambda: self._show_categories(self.current_department, self.current_dept_items))
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
+
+        if not self.current_items:
+            empty_label = tk.Label(self.content_frame, text="No equipment found.", font=("Arial", 14), bg="#1E293B", fg="#94A3B8")
+            empty_label.pack(pady=20)
+            return
 
         start_index = self.current_page * GRID_ITEMS_PER_PAGE
         end_index = start_index + GRID_ITEMS_PER_PAGE
@@ -245,20 +285,6 @@ class BrowseEquipmentPage:
                 col, row = 0, row + 1
 
         self._pagination_controls()
-
-    def _create_equipment_card(self, parent, item, row, col):
-        self.card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
-        self.card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
-        self.card.grid_propagate(False)
-
-        name_label = tk.Label(self.card, text=item["name"], font=("Arial", 16, "bold"), bg="#334155", fg="#FFFFFF")
-        name_label.pack(pady=(30, 30))
-
-        status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155", fg="#4ADE80" if item["status"] == "Available" else "#F87171")
-        status_label.pack(pady=(0, 10))
-
-        for widget in (self.card, name_label, status_label):
-            widget.bind("<Button-1>", lambda e, it=item: self._show_equipment_details(it))
 
     def _pagination_controls(self):
         total_items = len(self.current_items)
@@ -315,6 +341,9 @@ class BrowseEquipmentPage:
         self.close_btn = tk.Button(self.modal, text="Close", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", command=self.details_overlay.destroy)
         self.close_btn.pack(pady=5)
 
+    def _category_by_name(self, name):
+        return next((c for c in self.department_categories if c["name"] == name), None)
+
     def _confirm_reservation(self, item):
         result = create_reservation(
             user_id=self.current_user_id,
@@ -330,5 +359,7 @@ class BrowseEquipmentPage:
             messagebox.showinfo("Unavailable", "This equipment is currently unavailable.")
         elif result == "duplicate":
             messagebox.showinfo("Already Requested", "You already have a pending request for this equipment.")
+        elif result == "damaged":
+            messagebox.showinfo("Unavailable", "This equipment is currently under repair or damaged.")
         else:
             messagebox.showerror("Error", "Failed to submit reservation.")

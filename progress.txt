@@ -1,79 +1,114 @@
 === PROGRESS ===
 
 Sept 13, 2026 (Sunday)
-- Built the Login / Register UI without database
-- Test and Debug Supabase until it worked
+ADDED
+- Login / Register UI without database
+
+FIXED
+- Tested and debugged Supabase until it worked
 
 Sept 14, 2026 (Monday)
-- Created the Top Navigation, Sidebar, Right_Panel
-- Created the Pages Directory and the Children of Right Panel
-- Added password_hash in Supabase
+ADDED
+- Top Navigation, Sidebar, Right_Panel
+- Pages Directory and the children of Right Panel
+- password_hash in Supabase
 
 Sept 15, 2026 (Tuesday)
-- Added six buttons and created a simple function to connect them to the children in the Pages directory
-- Tested and Debugged Login and Register to ensure they were fully functional
-- Add Remember Me to Login
+ADDED
+- Six buttons and a simple function to connect them to the children in the Pages directory
+- Remember Me to Login
+
+FIXED
+- Tested and debugged Login and Register to ensure they were fully functional
 
 Sept 16, 2026 (Wednesday)
-- Added Dashboard content (Available Equipment, Pending Reservation, Borrowed Items, Approved Reservation)
-- Added threading to the Dashboard and Browse Equipment pages to prevent UI freezing during Supabase calls
-- Created the Remember Me Function using JSON
-- Tested and Debugged database
+ADDED
+- Dashboard content (Available Equipment, Pending Reservation, Borrowed Items, Approved Reservation)
+- Threading to the Dashboard and Browse Equipment pages to prevent UI freezing during Supabase calls
+- Remember Me function using JSON
+
+FIXED
+- Tested and debugged database
 
 Sept 17, 2026 (Thursday)
-- Added page navigation to Browse Equipment
-- Updated the database by adding categories and departments
-- Added some sample categories for testing
-- Fixed Dashboard card sizing bug caused by excessive padding
-- Built the Browse Equipment page with category-based drill-down navigation
-- Created a separate categories table and linked it to equipment via category_id
-- Fixed a bug where categories showed as "Uncategorized" due to RLS blocking access
+ADDED
+- Page navigation to Browse Equipment
+- Categories and departments to the database
+- Some sample categories for testing
+- Browse Equipment page with category-based drill-down navigation
+- Separate categories table linked to equipment via category_id
+
+FIXED
+- Dashboard card sizing bug caused by excessive padding
+- Bug where categories showed as "Uncategorized" due to RLS blocking access
 
 Sept 18, 2026 (Friday)
 - Rest Day
 
 Sept 19, 2026 (Saturday)
-- Added department content in browse equipment
-- Added departments table in Database
+ADDED
+- Department content in Browse Equipment
+- Departments table in Database
+
+CHANGED
 - Restructured Browse Equipment into a hierarchical navigation: Department -> Category -> Equipment
-- Fixed cards font bug caused by excessive padding
+
+FIXED
+- Cards font bug caused by excessive padding
 
 Sept 20, 2026 (Sunday | Task)
-- Added a modal for equipment reservation (not yet connected to the database and admin)
-- Added a confirmation dialog to the logout button
-- Fixed the logout button getting stuck when the user selects "No"
-- Added an admin window for testing
+ADDED
+- Modal for equipment reservation (not yet connected to the database and admin)
+- Confirmation dialog to the logout button
+- Admin window for testing
+
+FIXED
+- Logout button getting stuck when the user selects "No"
 
 Sept 21, 2026 (Monday)
-- Added a Due Soon card and Total Equipment count to the Dashboard
-- Fixed dashboard card sizing bug (title text getting cut off)
-- Fixed Remember Me bug where admin accounts were opening the User Dashboard instead of Admin Dashboard
-- Improved the Register window
-- Added the project to GitHub
+ADDED
+- Due Soon card and Total Equipment count to the Dashboard
+- Project to GitHub
 - Started building the Admin Dashboard (in progress)
 
+CHANGED
+- Improved the Register window
+
+FIXED
+- Dashboard card sizing bug (title text getting cut off)
+- Remember Me bug where admin accounts were opening the User Dashboard instead of Admin Dashboard
+
 Sept 22, 2026 (Tuesday)
+ADDED
 - Completed Admin Dashboard shell (header, sidebar, navigation)
-- Added dashboard summary cards: Total Equipment, Total Users, Pending, Borrowed, Available
+- Dashboard summary cards: Total Equipment, Total Users, Pending, Borrowed, Available
 - Connected dashboard to the database
-- Built Admin Manage Equipment page with Add/Edit/Delete (in progress)
+- Admin Manage Equipment page with Add/Edit/Delete (in progress)
 
 Sept 23, 2026 (Wednesday)
-- Created Admin Manage Reservation Page
-- Implemented Accept/Reject with auto-reject: approving a reservation
+ADDED
+- Admin Manage Reservation page
+- Accept/Reject with auto-reject: approving a reservation
   automatically rejects other pending requests for the same equipment
+
+CHANGED
 - Synced equipment status with reservation status (Available <-> Unavailable)
-- Fixed dashboard "Borrowed Items" count showing all users' data instead of the logged-in user's
-- Fixed equipment status update using wrong dict syntax (comma instead of colon)
-- Fixed duplicate messagebox popup when reservation fails (unavailable/duplicate request)
-- Fixed minimize button for admin and user functions
+
+FIXED
+- Dashboard "Borrowed Items" count showing all users' data instead of the logged-in user's
+- Equipment status update using wrong dict syntax (comma instead of colon)
+- Duplicate messagebox popup when reservation fails (unavailable/duplicate request)
+- Minimize button for admin and user functions
 
 Sept 24, 2026 (Thursday)
-- Created User "My Reservation" page (Department, Category, Equipment, status, action button)
-- Implemented Cancel (for Pending) and Return (for Approved) buttons and their backend functions
-- Fixed cancel_reservation/return_equipment not returning query response correctly
+ADDED
+- User "My Reservation" page (Department, Category, Equipment, status, action button)
+- Cancel (for Pending) and Return (for Approved) buttons and their backend functions
+
+FIXED
+- cancel_reservation/return_equipment not returning query response correctly
   (was reading .data from the query builder instead of the executed response)
-- Fixed page not refreshing after Cancel/Return due to a TypeError in
+- Page not refreshing after Cancel/Return due to a TypeError in
   _refresh_after_action (dividing a list instead of its length)
 - Verified user-side actions correctly reflect in the admin Manage Reservations page
 
@@ -81,40 +116,80 @@ Sept 25, 2026 (Friday)
 - Rest Day
 
 Sept 26, 2026 (Saturday)
-- Built Add/Edit/Delete CRUD for Department, Category, and Equipment
+ADDED
+- Add/Edit/Delete CRUD for Department, Category, and Equipment
   in Admin Manage Inventory
-- Created reusable popup forms (tk.Toplevel) with ttk Comboboxes for
+- Reusable popup forms (tk.Toplevel) with ttk Comboboxes for
   category/department/status selection, using a callback pattern
   (on_save) so the same form works for both Add and Edit
-- Added validation and delete guards (cannot delete a department/category
+- Validation and delete guards (cannot delete a department/category
   still containing items, cannot delete equipment with active reservations)
-- Fixed pagination bugs: wrong list slicing, and the "Add New" card
+- Enter key shortcut (bind "<Return>") to submit forms without clicking Save
+
+FIXED
+- Pagination bugs: wrong list slicing, and the "Add New" card
   overflowing past the 3x3 grid instead of appearing on the next page
-- Added Enter key shortcut (bind "<Return>") to submit forms without clicking Save (fixed initial binding on the button instead of the window, so it now works
-  while typing in the entry field)
-- Fixed Reserve button text staying gray instead of white when disabled (unavailable equipment)
-- Fixed a NameError in category card click handler (referenced an
+- Enter key initial binding on the button instead of the window, so it now works
+  while typing in the entry field
+- Reserve button text staying gray instead of white when disabled (unavailable equipment)
+- NameError in category card click handler (referenced an
   undefined 'department' variable instead of 'category')
 - Verified Add/Edit/Delete correctly reflect on the user-side Browse Equipment page
 
 Sept 27, 2026 (Sunday)
-- Created the user profile page
-- Added change username/password functions in auth_service (verify_current_password, rehash_user_password_by_id, can_change_username, change_username)
-- Added return confirmation functions in auth_service (get_pending_returns, confirm_return, reject_return)
-- Updated the admin's Manage Reservation page, added a Returning section
-- Implemented change username and change password in the profile
-- Added profile info content and stats, like a mini dashboard
-- Updated the user-side Reservation page, added return date display when borrowed
-- Updated the Manage Reservation page from showing 5 rows to 4
-- Updated the Register button to use a key binding instead of requiring a mouse click.
-- Fixed a bug where changing the username left extra space at the top
+ADDED
+- User profile page
+- Change username/password functions in auth_service (verify_current_password, rehash_user_password_by_id, can_change_username, change_username)
+- Return confirmation functions in auth_service (get_pending_returns, confirm_return, reject_return)
+- Returning section in the admin's Manage Reservation page
+- Change username and change password in the profile
+- Profile info content and stats, like a mini dashboard
+
+CHANGED
+- User-side Reservation page now displays return date when borrowed
+- Manage Reservation page now shows 4 rows instead of 5
+- Register button now uses a key binding instead of requiring a mouse click
+
+FIXED
+- Bug where changing the username left extra space at the top
 
 Sept 28, 2026 (Monday)
+ADDED
+- Due Soon / Due Today / Overdue badges based on return date
+- Ctrl + BackSpace binding to clear the entry field in Manage Inventory forms
+
+CHANGED
 - Redesigned the user-side My Reservation row into a 3-column layout
   (equipment details, return date/due/status, action button)
-- Added Due Soon / Due Today / Overdue badges based on return date
-- Added Ctrl + BackSpace binding to clear the entry field in Manage Inventory forms
 
-Sept 29, 2026 (Tuesday | Task)
+Sept 29, 2026 (Tuesday)
+ADDED
+- Available Equipment and Borrowed Equipment tabs in Manage Reservation
+- Equipment condition tracking (Good, Fair, Damaged, Under Repair):
+  new column in Supabase, dropdown in Add/Edit Equipment form, and
+  create_reservation now blocks reserving Damaged/Under Repair items
+- Auto-reject of Pending reservations when equipment is marked Damaged/Under Repair (update_equipment)
+- status_updated_at column in Supabase to track when a reservation was approved/rejected
+
+CHANGED
+- Categories are now per department instead of all departments sharing the same categories
+- Admin and user-side now have the same category output
+- Notification page is now grouped by date (Just now, Today, Yesterday, X days ago, Last week), newest first
+
+FIXED
+- Equipment form grid layout after adding the Condition field
+- Pending reservation and borrowed list order by adding .order("id") to the query
+  (Supabase does not guarantee row order without it)
+- Condition not updating on the user-side Browse Equipment (extra space in the " condition" key
+  made it always show "Good")
+- Condition label color logic in Browse Equipment
+- department_id and category_id swapped in EquipmentForm, which moved items to the wrong
+  department/category after saving
+- Add Equipment not saving the condition (always defaulted to "Good")
+- Stale data in Browse Equipment (now re-fetches when returning to Departments)
+- Unresolved reference 'other_ids' in update_reservation_status
+- "Returning Pending" changed to "Return Pending" in get_user_reservations, so the reservation no longer disappears from My Reservation after the user requests a return
+
+Sept 30, 2026 (Wednesday | Possible Task)
 - Create Manage Users page
 - Create Reports page
