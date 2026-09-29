@@ -422,6 +422,7 @@ class ManageInventoryPage:
 
     def _open_edit_category_form(self, category_name):
         cat = self._category_by_name(category_name)
+
         if not cat:
             return
         CategoryForm(self.content_frame, initial_name=cat["name"],on_save=lambda new_name: self._handle_update_category(cat["id"], new_name))
@@ -450,6 +451,10 @@ class ManageInventoryPage:
             self._refresh_after_equipment_change()
 
     def _open_edit_equipment_form(self, item):
+        if item.get("status") == "Unavailable":
+            messagebox.showwarning("Unavailable", "Can't edit this equipment while it is unavailable.")
+            return
+
         category_obj = self._category_by_name_in_list(self.department_categories, self.current_category)
         EquipmentForm(self.content_frame, self.current_department, self.current_category, self.current_department_id, category_obj["id"], on_save=lambda data: self._handle_update_equipment(item["id"], data), item=item)
 

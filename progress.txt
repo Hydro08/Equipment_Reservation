@@ -170,6 +170,7 @@ ADDED
   create_reservation now blocks reserving Damaged/Under Repair items
 - Auto-reject of Pending reservations when equipment is marked Damaged/Under Repair (update_equipment)
 - status_updated_at column in Supabase to track when a reservation was approved/rejected
+- Auto-refresh (polling every 5 seconds) in Browse Equipment: updates the user's view and shows a notice when the admin changes equipment, categories, or departments
 
 CHANGED
 - Categories are now per department instead of all departments sharing the same categories

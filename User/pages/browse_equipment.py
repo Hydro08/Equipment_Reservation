@@ -6,6 +6,7 @@ from Authentication.auth_service import get_all_equipment, get_all_departments, 
 from tkinter import messagebox
 
 GRID_ITEMS_PER_PAGE = 9
+POLL_INTERVAL_MS = 5000
 
 class BrowseEquipmentPage:
 
@@ -50,6 +51,7 @@ class BrowseEquipmentPage:
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         self._show_departments()
+        self._start_polling()
 
     def _clear_content(self):
         for widget in self.content_frame.winfo_children():
@@ -63,10 +65,12 @@ class BrowseEquipmentPage:
         return row_frame
 
     def _show_departments(self):
+        self.current_view = "departments"
         self._clear_content()
         self.title_label.config(text="Browse Equipment")
 
         self.all_equipment = get_all_equipment()
+        self._last_signature = self._current_signature()
 
         if not self.all_departments:
             empty_label = tk.Label(self.content_frame, text="No departments found.", font=("Arial", 24), bg="#1E293B", fg="#94A3B8", height=50)
@@ -137,6 +141,7 @@ class BrowseEquipmentPage:
             widget.bind("<Button-1>", lambda e, d=department, its=items: self._open_department(d, its))
 
     def _show_categories(self, department, dept_items):
+        self.current_view = "categories"
         self.current_department = department
         self.current_dept_items = dept_items
         self._clear_content()
@@ -224,6 +229,8 @@ class BrowseEquipmentPage:
         self._show_categories(department, items)
 
     def _show_equipment_by_category(self, category, items):
+        cat = next((c for c in self.department_categories if c["name"] == category), None)
+        self.current_category_id = cat["id"] if cat else None
         self.current_category = category
         self.current_items = items
         self.current_page = 0
@@ -240,14 +247,18 @@ class BrowseEquipmentPage:
         status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155", fg="#4ADE80" if item["status"] == "Available" else "#F87171")
         status_label.pack(pady=(0, 10))
 
-        condition_label = tk.Label(self.card, text=f"Condition: {item.get("condition", "Good")}", font=("Arial", 14), bg="#334155", fg="#4ADE80" if item["condition"] == "Good" and "Fair" else "#94A3B8")
+        condition = item.get("condition", "Good")
+        condition_color = {"Good": "#4ADE80", "Fair": "#FBBF24"}.get(condition, "#F87171")
+        condition_label = tk.Label(self.card, text=f"Condition: {condition}", font=("Arial", 14), bg="#334155", fg=condition_color)
         condition_label.pack(pady=5)
 
         for widget in (self.card, name_label, status_label):
             widget.bind("<Button-1>", lambda e, it=item: self._show_equipment_details(it))
 
     def _render_category_page(self):
+        self.current_view = "equipment"
         self.all_equipment = get_all_equipment()
+        self._last_signature = self._current_signature()
         self.current_dept_items = [
             i for i in self.all_equipment
             if i.get("department_id") == self.current_department_id
@@ -333,7 +344,8 @@ class BrowseEquipmentPage:
         self.category_label = tk.Label(self.modal, text=f"Category: {self.name_category}", font=("Arial", 14), bg="#334155", fg="#94A3B8")
         self.category_label.pack(pady=5)
 
-        is_available = item.get("status") == "Available"
+        condition = item.get("condition", "Good")
+        is_available = item.get("status") == "Available" and condition not in ("Damaged", "Under Repair")
 
         self.reserve_btn = tk.Button(self.modal, text="Reserve" if is_available else item.get("status", "Unavailable"), font=("Arial", 14, "bold"), bg="#3AFD50" if is_available else "#F87171", fg="#0F172A", cursor="hand2" if is_available else "arrow", state="normal" if is_available else "disabled", disabledforeground="#FFFFFF",command=lambda: self._confirm_reservation(item))
         self.reserve_btn.pack(pady=(80, 5))
@@ -355,11 +367,100 @@ class BrowseEquipmentPage:
         if result == "success":
             messagebox.showinfo("Success", f"Reservation request sent: {item['name']}")
             self.details_overlay.destroy()
-        elif result == "unavailable":
-            messagebox.showinfo("Unavailable", "This equipment is currently unavailable.")
         elif result == "duplicate":
             messagebox.showinfo("Already Requested", "You already have a pending request for this equipment.")
+        elif result == "unavailable":
+            messagebox.showinfo("Unavailable", "This equipment is currently unavailable.")
+            self._sync_equipment()
         elif result == "damaged":
             messagebox.showinfo("Unavailable", "This equipment is currently under repair or damaged.")
+            self._sync_equipment()
         else:
             messagebox.showerror("Error", "Failed to submit reservation.")
+
+    def _sync_equipment(self):
+        self.all_equipment = get_all_equipment()
+        self._last_signature = self._current_signature()
+        self._refresh_current_view()
+
+    @staticmethod
+    def _make_signature(equipment_list, departments, categories):
+        return (
+            sorted((e["id"], e.get("name"), e.get("status"), e.get("condition"),
+                    e.get("department_id"), e.get("category_id")) for e in equipment_list),
+            sorted((d["id"], d["name"]) for d in departments),
+            sorted((c["id"], c["name"], c.get("department_id")) for c in categories),
+        )
+
+    def _current_signature(self):
+        return self._make_signature(self.all_equipment, self.all_departments, self.all_categories)
+
+    def _start_polling(self):
+        self._last_signature = self._current_signature()
+        # noinspection PyTypeChecker
+        self.main_frame.after(POLL_INTERVAL_MS, self._poll_equipment)
+
+    def _poll_equipment(self):
+        if not self.main_frame.winfo_exists():
+            return
+        threading.Thread(target=self._poll_worker, daemon=True).start()
+
+    def _poll_worker(self):
+        equipment = get_all_equipment()
+        departments = get_all_departments()
+        categories = get_all_categories()
+        try:
+            # noinspection PyTypeChecker
+            self.main_frame.after(0, lambda: self._apply_poll_result(equipment, departments, categories))
+        except (tk.TclError, RuntimeError):
+            pass
+
+    def _apply_poll_result(self, equipment, departments, categories):
+        if not self.main_frame.winfo_exists():
+            return
+
+        if equipment and departments:
+            signature = self._make_signature(equipment, departments, categories)
+            if signature != self._last_signature:
+                self._last_signature = signature
+                self.all_equipment = equipment
+                self.all_departments = departments
+                self.all_categories = categories
+                self._refresh_current_view()
+                messagebox.showinfo(
+                    "Equipment Updated",
+                    "Sorry for the interruption. The equipment information has been updated."
+                )
+
+        # noinspection PyTypeChecker
+        self.main_frame.after(POLL_INTERVAL_MS, lambda: self._poll_equipment())
+
+    def _refresh_current_view(self):
+        overlay = getattr(self, "details_overlay", None)
+        if overlay is not None and overlay.winfo_exists():
+            overlay.destroy()
+
+        view = getattr(self, "current_view", "departments")
+
+        if view in ("categories", "equipment"):
+            dept = next((d for d in self.all_departments if d["id"] == self.current_department_id), None)
+            if dept is None:
+                view = "departments"
+            else:
+                self.current_department = dept["name"]
+                self.department_categories = [c for c in self.all_categories if c["department_id"] == dept["id"]]
+                self.current_dept_items = [i for i in self.all_equipment if i.get("department_id") == dept["id"]]
+
+        if view == "equipment":
+            cat = next((c for c in self.department_categories if c["id"] == self.current_category_id), None)
+            if cat is None:
+                view = "categories"
+            else:
+                self.current_category = cat["name"]
+                self._render_category_page()
+                return
+
+        if view == "categories":
+            self._show_categories(self.current_department, self.current_dept_items)
+        else:
+            self._show_departments()
