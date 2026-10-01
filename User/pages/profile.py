@@ -238,8 +238,9 @@ class ProfilePage:
             geo = win.geometry()
             size, x, y = geo.split("+")
             width, height = size.split("x")
-            new_height = int(height) + 250
-            win.geometry(f"{width}x{new_height}+{x}+{y}")
+            new_height = int(height) + 210
+            new_y = (win.winfo_screenheight() - new_height) // 2
+            win.geometry(f"{width}x{new_height}+{x}+{new_y}")
 
             save_btn.pack(side="left", padx=6)
             verify_btn.pack_forget()

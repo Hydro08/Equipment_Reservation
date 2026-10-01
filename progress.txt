@@ -221,7 +221,7 @@ ADDED
 - Pending Request and Borrowed Equipment tabs in the user My Reservation page
 
 CHANGED
--
+- Change Username and Change Password windows now open centered on the screen instead of the top left
 
 FIXED
 - Reports: "time(s)" count in Most Borrowed Equipment was placed in the wrong row (row=1 instead of row=i)
