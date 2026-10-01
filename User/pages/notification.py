@@ -5,7 +5,7 @@ from datetime import datetime, timezone, date
 from tkinter import messagebox
 from Authentication.auth_service import get_user_notification,dismiss_notification
 
-NOTIFICATIONS_PER_PAGE = 6
+NOTIFICATIONS_PER_PAGE = 7
 
 class NotificationPage:
 

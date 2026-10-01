@@ -57,8 +57,7 @@ class ProfilePage:
             self._build_profile_info()
             self._build_stats(summary)
         except Exception as e:
-            tk.Label(self.content_frame, text=f"Error loading profile: {e}", font=("Arial", 13),
-                     bg=self.BG, fg="#F87171", wraplength=800, justify="left").pack(pady=20)
+            tk.Label(self.content_frame, text=f"Error loading profile: {e}", font=("Arial", 13), bg=self.BG, fg="#F87171", wraplength=800, justify="left").pack(pady=20)
             raise
 
     def _build_profile_info(self):
@@ -146,6 +145,14 @@ class ProfilePage:
         entry.pack(padx=20, pady=(0, 20), ipady=4)
         entry.focus_set()
 
+        user_width = 300
+        user_height = 150
+        user_screen_width = win.winfo_screenwidth()
+        user_screen_height = win.winfo_screenheight()
+        x = (user_screen_width - user_width) // 2
+        y = (user_screen_height - user_height) // 2
+        win.geometry(f"{user_width}x{user_height}+{x}+{y}")
+
         def save():
             new_name = username_var.get().strip()
             if not new_name:
@@ -165,10 +172,8 @@ class ProfilePage:
 
         btn_frame = tk.Frame(win, bg=self.BG)
         btn_frame.pack(pady=(0, 20))
-        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A",
-                  command=save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
-        tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=self.PANEL, fg=self.FG,
-                  command=win.destroy, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
+        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", command=save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
+        tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=self.PANEL, fg=self.FG, command=win.destroy, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
 
         win.bind("<Return>", lambda e: save())
         win.grab_set()
@@ -184,6 +189,14 @@ class ProfilePage:
         current_entry = tk.Entry(win, textvariable=current_var, width=28, font=("Arial", 12), bg=self.PANEL, fg=self.FG, insertbackground=self.FG, relief="flat", show="*")
         current_entry.pack(padx=20, pady=(0, 10), ipady=4)
         current_entry.focus_set()
+
+        pass_width = 300
+        pass_height = 150
+        pass_screen_width = win.winfo_screenwidth()
+        pass_screen_height = win.winfo_screenheight()
+        pass_x = (pass_screen_width - pass_width) // 2
+        pass_y = (pass_screen_height - pass_height) // 2
+        win.geometry(f"{pass_width}x{pass_height}+{pass_x}+{pass_y}")
 
         new_fields_frame = tk.Frame(win, bg=self.BG)
 
@@ -225,7 +238,7 @@ class ProfilePage:
             geo = win.geometry()
             size, x, y = geo.split("+")
             width, height = size.split("x")
-            new_height = int(height) + 40
+            new_height = int(height) + 250
             win.geometry(f"{width}x{new_height}+{x}+{y}")
 
             save_btn.pack(side="left", padx=6)
@@ -257,8 +270,7 @@ class ProfilePage:
         cancel_btn = tk.Button(win, text="Cancel", font=("Arial", 12), bg=self.PANEL, fg=self.FG, command=win.destroy, padx=16, pady=4, bd=0, cursor="hand2")
         cancel_btn.pack(pady=(0, 20))
 
-        win.bind("<Return>",
-                 lambda e: verify_current() if current_entry["state"] != "disabled" else save_new_password())
+        win.bind("<Return>", lambda e: verify_current() if current_entry["state"] != "disabled" else save_new_password())
         win.grab_set()
 
     def _refresh_page(self):

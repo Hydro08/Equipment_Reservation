@@ -6,7 +6,7 @@ from collections import Counter
 from datetime import date
 from tkinter import ttk, messagebox, filedialog
 
-from Authentication.auth_service import get_reservation_report
+from Authentication.auth_service import get_reservation_report, get_all_equipment
 
 PERIODS = {
     "Today": 0,
@@ -73,9 +73,10 @@ class ReportsPage:
 
     def _fetch(self, days, request_id):
         rows = get_reservation_report(days)
+        equipment = get_all_equipment()
         try:
             # noinspection PyTypeChecker
-            self.reports_panel.after(0, lambda: self._render(rows, request_id))
+            self.reports_panel.after(0, lambda: self._render(rows, equipment, request_id))
         except (tk.TclError, RuntimeError):
             pass
 
@@ -89,7 +90,7 @@ class ReportsPage:
             return 0
         return max(0, (date.today() - due).days)
 
-    def _render(self, rows, request_id):
+    def _render(self, rows, equipment, request_id):
         if request_id != self._request_id or not self.reports_panel.winfo_exists():
             return
 
@@ -110,6 +111,13 @@ class ReportsPage:
             (r.get("equipment") or {}).get("name", "Unknown")
             for r in rows if r.get("status") in ("Approved", "Return Pending", "Returned")
         )
+
+        dept_counts = Counter(
+            ((r.get("equipment") or {}).get("departments") or {}).get("name", "Unassigned")
+            for r in rows
+        )
+
+        attention = [e for e in equipment if e.get("condition") in ("Damaged", "Under Repair")]
 
         stats = tk.Frame(self.body, bg=self.primary_bg)
         stats.pack(fill="x", pady=(0, 15))
@@ -132,6 +140,8 @@ class ReportsPage:
 
         self._render_top_borrowed(lower, borrowed.most_common(5))
         self._render_overdue(lower, overdue)
+        self._render_departments(lower, dept_counts.most_common(5))
+        self._render_attention(lower, attention)
 
     def _stat_card(self, parent, title, value, col, color):
         card = tk.Frame(parent, bg=self.panel_bg, height=110)
@@ -141,9 +151,9 @@ class ReportsPage:
         tk.Label(card, text=str(value), font=("Arial", 26, "bold"), bg=self.panel_bg, fg=color).pack(pady=(20, 0))
         tk.Label(card, text=title, font=("Arial", 12), bg=self.panel_bg, fg=self.muted_fg).pack()
 
-    def _make_panel(self, parent, title, col):
+    def _make_panel(self, parent, title, col, row=0):
         panel = tk.Frame(parent, bg=self.panel_bg)
-        panel.grid(row=0, column=col, padx=8, sticky="nsew")
+        panel.grid(row=row, column=col, padx=8, pady=(0 if row == 0 else 16, 0), sticky="nsew")
 
         tk.Label(panel, text=title, font=("Arial", 16, "bold"), bg=self.panel_bg, fg=self.primary_fg).pack(anchor="w", padx=15, pady=(15, 10))
 
@@ -187,6 +197,40 @@ class ReportsPage:
 
         if len(overdue) > 5:
             tk.Label(inner, text=f"+ {len(overdue) - 5} more (see the CSV export)", font=("Arial", 11), bg=self.panel_bg, fg=self.muted_fg).grid(row=6, column=0, columnspan=4, sticky="w", pady=(8, 0))
+
+    def _render_departments(self, parent, top):
+        inner = self._make_panel(parent, "Reservation per Department", 0, row=1)
+        inner.grid_columnconfigure(0, weight=1)
+        inner.grid_columnconfigure(1, weight=0, minsize=100)
+
+        if not top:
+            tk.Label(inner, text="No reservation in this period.", font=("Arial", 12), bg=self.panel_bg, fg=self.muted_fg).grid(row=0, column=0, sticky="w")
+            return
+
+        for i, (name, count) in enumerate(top):
+            tk.Label(inner, text=f"{i + 1}. {name}", font=("Arial", 13), bg=self.panel_bg, fg=self.primary_fg, anchor="w").grid(row=i, column=0, sticky="w", pady=3)
+            tk.Label(inner, text=f"{count} request(s)", font=("Arial", 13), bg=self.panel_bg, fg=self.muted_fg).grid(row=i, column=1, sticky="e", pady=3)
+
+    def _render_attention(self, parent, items):
+        inner = self._make_panel(parent, "Equipment Needing attention", 1, row=1)
+
+        for c, text in enumerate(["Equipment", "Department", "Condition"]):
+            inner.grid_columnconfigure(c, weight=1)
+            tk.Label(inner, text=text, font=("Arial", 12, "bold"), bg=self.panel_bg, fg=self.muted_fg, anchor="w").grid(row=0, column=c, sticky="w", pady=(0, 6))
+
+        if not items:
+            tk.Label(inner, text="No damaged or under repair equipment.", font=("Arial", 12), bg=self.panel_bg, fg="#4ADE80").grid(row=1, column=0, columnspan=3, sticky="w")
+            return
+
+        for i, e in enumerate(items[:5], start=1):
+            condition = e.get("condition", "")
+            values = [e.get("name", ""), (e.get("departments") or {}).get("name", ""), condition]
+            for c, value in enumerate(values):
+                color = ("#F87171" if condition == "Damaged" else "#FBBF24") if c == 2 else self.primary_fg
+                tk.Label(inner, text=value, font=("Arial", 12), bg=self.panel_bg, fg=color, anchor="w").grid(row=i, column=c, sticky="w", pady=3)
+
+        if len(items) > 5:
+            tk.Label(inner, text=f"+ {len(items) - 5} more (see Manage Inventory)", font=("Arial", 11), bg=self.panel_bg, fg=self.muted_fg).grid(row=6, column=0, columnspan=3, sticky="w", pady=(8, 0))
 
     def _export_csv(self):
         if not self.rows:

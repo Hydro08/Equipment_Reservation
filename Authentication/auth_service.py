@@ -85,13 +85,16 @@ def get_admin_dashboard_summary():
         borrowed = borrowed_query.execute()
         available_query: Any = supabase.table("equipment").select("id", count=CountMethod.exact).eq("status", "Available")
         available = available_query.execute()
+        returning_query: Any = supabase.table("reservation").select("id", count=CountMethod.exact).eq("status", "Return Pending")
+        returning = returning_query.execute()
 
         return {
             "total_equipment": total_equipment.count or 0,
             "total_users": total_users.count or 0,
             "pending": pending.count or 0,
             "borrowed": borrowed.count or 0,
-            "available": available.count or 0
+            "available": available.count or 0,
+            "returning": returning.count or 0
         }
     except Exception as e:
         messagebox.showerror("Database Error", f"Error fetching admin dashboard summary: {e}")
@@ -100,7 +103,8 @@ def get_admin_dashboard_summary():
             "total_users": 0,
             "pending": 0,
             "borrowed": 0,
-            "available": 0
+            "available": 0,
+            "returning": 0
         }
 
 def get_dashboard_summary(user_id):
@@ -165,6 +169,7 @@ def set_user_banned(user_id, banned: bool):
         return True
     except Exception as e:
         messagebox.showerror("Database Error", f"Error updating user: {e}")
+        return False
 
 def user_has_borrowed_items(user_id):
     try:
@@ -173,6 +178,7 @@ def user_has_borrowed_items(user_id):
         return bool(response.data)
     except Exception as e:
         messagebox.showerror("Database Error", f"Error checking borrowed items: {e}")
+        return True
 
 def get_all_departments():
     try:

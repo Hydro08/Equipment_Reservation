@@ -13,11 +13,30 @@ class ReservationPage:
     primary_bg = "#1E293B"
     primary_fg = "#FFFFFF"
 
-    def __init__(self, parent, color, user):
+    active_tab_bg = "#4ADE80"
+    active_tab_fg = "#0F172A"
+    inactive_tab_bg = "#334155"
+    inactive_tab_fg = "#FFFFFF"
+
+    TABS = [
+        ("pending", "Pending Request", "No pending reservation."),
+        ("borrowed", "Borrowed Equipment", "No borrowed equipment.")
+    ]
+
+    TAB_STATUSES = {
+        "pending": ("Pending",),
+        "borrowed": ("Approved", "Return Pending"),
+    }
+
+    def __init__(self, parent, color, user, initial_tab="pending"):
         self.parent = parent
         self.colors = color
         self.user = user
+        self.mode = initial_tab
+        self.all_reservations = []
+        self.current_data = []
         self.current_page = 0
+        self.empty_texts = {mode: empty for mode, _, empty in self.TABS}
 
         self._build_ui()
 
@@ -28,27 +47,71 @@ class ReservationPage:
         self.reservation_title = tk.Label(self.reservation_panel, text="Reservation", font=("Arial", 24), **self.colors)
         self.reservation_title.pack(pady=(20, 0))
 
-        self.loading_label = tk.Label(self.reservation_panel, text="Loading...", font=("Arial", 24), **self.colors, height=50)
+        self.tab_frame = tk.Frame(self.reservation_panel, bg=self.primary_bg)
+        self.tab_frame.pack(pady=(15, 0))
+
+        self.tab_buttons = {}
+        for mode, label, _ in self.TABS:
+            btn = tk.Button(self.tab_frame, text=label, font=("Arial", 12, "bold"), cursor="hand2", bd=0, padx=20, pady=8, command=lambda m=mode: self._switch_tab(m))
+            btn.pack(side="left", padx=5)
+            self.tab_buttons[mode] = btn
+
+        self.body_frame = tk.Frame(self.reservation_panel, bg=self.primary_bg)
+        self.body_frame.pack(fill="both", expand=True)
+
+        self.content_frame = None
+        self.loading_label = None
+
+        self._switch_tab(self.mode)
+
+    def _update_tab_styles(self):
+        for mode, btn in self.tab_buttons.items():
+            if mode == self.mode:
+                btn.config(bg=self.active_tab_bg, fg=self.active_tab_fg)
+            else:
+                btn.config(bg=self.inactive_tab_bg, fg=self.inactive_tab_fg)
+
+    def _switch_tab(self, mode):
+        self.mode = mode
+        self.current_page = 0
+        self._update_tab_styles()
+        self._show_loading_and_fetch()
+
+    def _show_loading_and_fetch(self):
+        for widget in self.body_frame.winfo_children():
+            widget.destroy()
+        self.content_frame = None
+
+        self.loading_label = tk.Label(self.body_frame, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
 
-        threading.Thread(target=self._fetch_reservation_data, daemon=True).start()
+        threading.Thread(target=self._fetch_data, args=(self.mode,), daemon=True).start()
 
-    def _fetch_reservation_data(self):
-        reservations = get_user_reservations(self.user['id'])
+    def _fetch_data(self, mode):
+        data = get_user_reservations(self.user["id"])
+        try:
+            # noinspection PyTypeChecker
+            self.reservation_panel.after(0, lambda: self._on_data_fetched(mode, data))
+        except (tk.TclError, RuntimeError):
+            pass
 
-        self.reservation_panel.after(0, self._render_reservation, reservations)
+    def _filter_current_tab(self):
+        statuses = self.TAB_STATUSES[self.mode]
+        return [r for r in self.all_reservations if r.get("status") in statuses]
 
-    def _render_reservation(self, summary):
-        if not self.loading_label.winfo_exists():
+    def _on_data_fetched(self, mode, data):
+        if mode != self.mode:
+            return
+        if not self.loading_label or not self.loading_label.winfo_exists():
             return
 
         self.loading_label.destroy()
-        self.all_reservations = summary
+        self.all_reservations = data
+        self.current_data = self._filter_current_tab()
 
-        self.content_frame = tk.Frame(self.reservation_panel, bg=self.primary_bg)
+        self.content_frame = tk.Frame(self.body_frame, bg=self.primary_bg)
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-        self.current_page = 0
         self._render_page()
 
     def _clear_content(self):
@@ -58,14 +121,12 @@ class ReservationPage:
     def _render_page(self):
         self._clear_content()
 
-        if not self.all_reservations:
-            empty_label = tk.Label(self.content_frame, text="No reservations yet.", font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg, height=50)
-            empty_label.pack(pady=20)
+        if not self.current_data:
+            tk.Label(self.content_frame, text=self.empty_texts[self.mode], font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg, height=50).pack(pady=20)
             return
 
         start_index = self.current_page * ITEMS_PER_PAGE
-        end_index = start_index + ITEMS_PER_PAGE
-        page_items = self.all_reservations[start_index:end_index]
+        page_items = self.current_data[start_index:start_index + ITEMS_PER_PAGE]
 
         for reservation in page_items:
             self.create_reservation_row(reservation)
@@ -173,14 +234,15 @@ class ReservationPage:
 
     def _refresh_after_action(self):
         self.all_reservations = get_user_reservations(self.user["id"])
-        total_items = len(self.all_reservations)
-        total_pages = max(1, -(-total_items // ITEMS_PER_PAGE))
+        self.current_data = self._filter_current_tab()
+
+        total_pages = max(1, -(-len(self.current_data) // ITEMS_PER_PAGE))
         if self.current_page >= total_pages:
             self.current_page = total_pages - 1
         self._render_page()
 
     def _pagination_controls(self):
-        total_items = len(self.all_reservations)
+        total_items = len(self.current_data)
         total_pages = max(1, -(-total_items // ITEMS_PER_PAGE))
 
         if total_pages <= 1:

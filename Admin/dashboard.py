@@ -168,6 +168,7 @@ class AdminDashboard:
         self.cards_frame.grid_rowconfigure(0, weight=1)
         self.cards_frame.grid_rowconfigure(1, weight=1)
         self.cards_frame.grid_rowconfigure(2, weight=1)
+        self.cards_frame.grid_rowconfigure(2, weight=1)
 
         self._create_card(self.cards_frame, "Total Equipment", str(summary["total_equipment"]), row=0, column=0, on_click=lambda: self._navigate_to(self.manage_inventory_btn))
 
@@ -177,7 +178,9 @@ class AdminDashboard:
 
         self._create_card(self.cards_frame, "Borrowed Equipment", str(summary["borrowed"]), row=1, column=1, on_click=lambda: self._navigate_to(self.manage_reservation_btn, tab="borrowed"))
 
-        self._create_card(self.cards_frame, "Available Equipment", str(summary["available"]), row=2, column=0,          on_click=lambda: self._navigate_to(self.manage_reservation_btn, tab="available"))
+        self._create_card(self.cards_frame, "Available Equipment", str(summary["available"]), row=2, column=0, on_click=lambda: self._navigate_to(self.manage_reservation_btn, tab="available"))
+
+        self._create_card(self.cards_frame, "Pending Returns", str(summary["returning"]), row=2, column=1, on_click=lambda: self._navigate_to(self.manage_reservation_btn, tab="return"))
 
     def _create_card(self, parent, title, value, row, column, on_click=None):
         card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)

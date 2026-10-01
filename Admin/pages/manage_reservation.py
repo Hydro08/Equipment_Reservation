@@ -259,13 +259,14 @@ class ManageReservationPage:
     def _refresh_after_action(self):
         self.current_data = self.fetchers[self.mode]()
 
-        total_pages = max(1, -(-len(self.current_data) // ITEMS_PER_PAGE))
+        items_per_page = 5 if self.mode == "available" else ITEMS_PER_PAGE
+        total_pages = max(1, -(-len(self.current_data) // items_per_page))
         if self.current_page >= total_pages:
             self.current_page = total_pages - 1
 
         self._render_page()
 
-    def _pagination_controls(self, total_items):
+    def  _pagination_controls(self, total_items):
         items_per_pages = 5 if self.mode == "available" else ITEMS_PER_PAGE
         total_pages = max(1, -(-total_items // items_per_pages))
 

@@ -215,3 +215,17 @@ FIXED
 - Reports: "time(s)" count in Most Borrowed Equipment was placed in the wrong row (row=1 instead of row=i)
 
 Oct 1, 2026 (Thursday)
+ADDED
+- Reports: "Reservations per Department" and "Equipment Needing Attention" (Damaged / Under Repair) panels
+- "Pending Returns" card in the Admin Dashboard (returns waiting for admin confirmation)
+- Pending Request and Borrowed Equipment tabs in the user My Reservation page
+
+CHANGED
+-
+
+FIXED
+- Reports: "time(s)" count in Most Borrowed Equipment was placed in the wrong row (row=1 instead of row=i)
+- Pending Returns card: wrong position/typo (onclick -> on_click) and wrong tab key ("returning" -> "return")
+- Removed the extra "Pending Return" tab in Manage Reservation that caused a KeyError
+- Missing "returning" in the fallback of get_admin_dashboard_summary
+- set_user_banned / user_has_borrowed_items now return a value when an error occurs
