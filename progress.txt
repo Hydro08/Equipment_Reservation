@@ -191,6 +191,27 @@ FIXED
 - Unresolved reference 'other_ids' in update_reservation_status
 - "Returning Pending" changed to "Return Pending" in get_user_reservations, so the reservation no longer disappears from My Reservation after the user requests a return
 
-Sept 30, 2026 (Wednesday | Possible Task)
-- Create Manage Users page
-- Create Reports page
+Sept 30, 2026 (Wednesday)
+ADDED
+- Search filter in Browse Equipment: shows matching departments, categories, and equipment (by name) as cards
+- Pagination in Notification page (6 per page)
+- Manage Users page: 5-column user cards (15 per page) with Ban / Unban option
+- is_banned column in Supabase; banned users can no longer log in
+- Automatic logout with a notice when a logged-in user gets banned (checks every 5 seconds)
+- create_reservation now blocks banned users
+- Reports page: summary cards, Top 5 most borrowed equipment, overdue list, and period filter (Today / Last 7 days / Last 30 days / All time)
+- Export to CSV of the reservation report
+- "Thank you" notification for the user when the admin confirms a returned item
+
+CHANGED
+- Equipment cards in search results now use a compact layout (Department > Category, name, status | condition)
+
+FIXED
+- Department pagination in Manage Inventory not moving to the next page
+  (_go_next_department_page / _go_previous_department_page were changing current_category_page)
+- Banned users could still enter through Remember Me (auto-login now checks is_banned and clears the saved session)
+- Search view name mismatch ("Search" vs "search") that broke auto-refresh and the X button in search results
+- Pagination hidden on the last page of search results (cards were too tall)
+- Reports: "time(s)" count in Most Borrowed Equipment was placed in the wrong row (row=1 instead of row=i)
+
+Oct 1, 2026 (Thursday)

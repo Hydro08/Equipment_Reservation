@@ -7,7 +7,8 @@ from Admin.dashboard import AdminDashboard
 from User.dashboard import UserDashboard
 
 from Authentication.auth_service import login_user, get_user_by_id
-from Database.session_manager import save_session, load_session
+from Database.session_manager import save_session, load_session, clear_session
+
 
 class LoginWindow:
     app_name = "Equipment Reservation"
@@ -16,6 +17,7 @@ class LoginWindow:
     primary_bg = "#0F172A"
     primary_fg = "#FFFFFF"
     hover_bg = "dark gray"
+    banned_notice = False
 
     def __init__(self):
         self.login_window = tk.Tk()
@@ -26,6 +28,11 @@ class LoginWindow:
         saved_user_id = load_session()
         if saved_user_id:
             user = get_user_by_id(saved_user_id)
+            if user and user.get("is_banned"):
+                clear_session()
+                self.banned_notice = True
+                user = None
+
             if user:
                 self.login_window.destroy()
 
@@ -38,6 +45,10 @@ class LoginWindow:
         self.colors = self.fg_bg()
         self._center_window()
         self._build_ui()
+
+        if self.banned_notice:
+            # noinspection PyTypeChecker
+            self.login_window.after(200, lambda: messagebox.showinfo("Account Banned!", "Your account has been banned. Please contact the administrator."))
 
         self.login_window.mainloop()
 
@@ -57,8 +68,7 @@ class LoginWindow:
 
         self._build_register_link()
 
-        self.login_button = tk.Button(self.login_window, text="Login", font=("Arial", 16), width=7, cursor="hand2",
-                                      **self.colors)
+        self.login_button = tk.Button(self.login_window, text="Login", font=("Arial", 16), width=7, cursor="hand2", **self.colors)
         self.login_button.pack(pady=(20, 0))
         self.login_button.bind("<Button-1>", lambda e: self.login())
 
@@ -102,9 +112,7 @@ class LoginWindow:
 
         self.show_pass = tk.BooleanVar(value=False)
         self.show_pass_checkbox = tk.show_pass_checkbox = (
-            tk.Checkbutton(self.password_panel, text="Show Password", font=("Arial", 14), **self.colors,
-                           selectcolor="#0F172A", activeforeground="white", cursor="hand2", variable=self.show_pass,
-                           command=lambda: self._toggle_password())
+            tk.Checkbutton(self.password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor="#0F172A", activeforeground="white", cursor="hand2", variable=self.show_pass, command=lambda: self._toggle_password())
         )
         self.show_pass_checkbox.pack(pady=(20, 0), side="left")
 

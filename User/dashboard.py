@@ -1,5 +1,6 @@
 import tkinter as tk
 import threading
+import httpx
 
 from tkinter import messagebox
 
@@ -8,8 +9,10 @@ from User.pages.reservation import ReservationPage
 from User.pages.notification import NotificationPage
 from User.pages.profile import ProfilePage
 
-from Authentication.auth_service import get_dashboard_summary
+from Authentication.auth_service import get_dashboard_summary, get_user_by_id
 from Database.session_manager import clear_session
+
+BAN_CHECK_MS = 5000
 
 class UserDashboard:
 
@@ -55,6 +58,8 @@ class UserDashboard:
         self.colors = self.fg_bg()
         self.btn_config = self._button_style()
         self._build_ui()
+
+        self._start_ban_check()
 
         self.user_window.mainloop()
 
@@ -217,10 +222,10 @@ class UserDashboard:
         self._create_card(self.cards_frame, "Pending Reservation", str(summary["pending"]), row=0, column=1)
         self._create_card(self.cards_frame, "Borrowed Items", str(summary["borrowed"]), row=1, column=0)
         self._create_card(self.cards_frame, "Total Equipment", str(summary["total"]), row=1, column=1)
-        self._create_card(self.cards_frame, "Due Soon", str(summary["due_soon"]), row=2, column=0)
+        self._create_card(self.cards_frame, "Due Soon / Overdue", str(summary["due_soon"]), row=2, column=0)
 
     def _create_card(self, parent, title, value, row, column):
-        card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
+        card = tk.Frame(parent, bg="#334155", cursor="no", height=180)
         card.grid(row=row, column=column, padx=15, pady=15, sticky="nsew")
         card.grid_propagate(False)
 
@@ -307,8 +312,57 @@ class UserDashboard:
 
         if logout_question:
             clear_session()
-
+            self._cancel_ban_check()
             self.user_window.destroy()
 
             from Authentication.login import LoginWindow
             LoginWindow()
+
+    def _start_ban_check(self):
+        # noinspection PyTypeChecker
+        self._ban_after_id = self.user_window.after(BAN_CHECK_MS, self._check_ban)
+
+    def _check_ban(self):
+        if not self.user_window.winfo_exists():
+            return
+        threading.Thread(target=self._ban_worker, daemon=True).start()
+
+    def _ban_worker(self):
+        try:
+            user = get_user_by_id(self.user["id"])
+        except (httpx.HTTPError, OSError):
+            user = None
+        try:
+            # noinspection PyTypeChecker
+            self.user_window.after(0, lambda: self._apply_ban_result(user))
+        except (tk.TclError, RuntimeError):
+            pass
+
+    def _apply_ban_result(self, user):
+        if not self.user_window.winfo_exists():
+            return
+
+        if user and user.get("is_banned"):
+            self._force_logout()
+            return
+
+        # noinspection PyTypeChecker
+        self._ban_after_id = self.user_window.after(BAN_CHECK_MS, self._check_ban)
+
+    def _cancel_ban_check(self):
+        after_id = getattr(self, "_ban_after_id", None)
+        if after_id:
+            try:
+                self.user_window.after_cancel(after_id)
+            except tk.TclError:
+                pass
+            self._ban_after_id = None
+
+    def _force_logout(self):
+        messagebox.showinfo("Account Banned", "Your account has been banned. You will be logged out.")
+        clear_session()
+        self._cancel_ban_check()
+        self.user_window.destroy()
+
+        from Authentication.login import LoginWindow
+        LoginWindow()

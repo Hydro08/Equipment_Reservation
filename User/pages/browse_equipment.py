@@ -26,13 +26,176 @@ class BrowseEquipmentPage:
         self.main_frame = tk.Frame(self.parent, bg=self.primary_bg)
         self.main_frame.pack(fill="both", expand=True)
 
-        self.title_label = tk.Label(self.main_frame, text="Browse Equipment", font=("Arial", 24, "bold"), **self.colors)
-        self.title_label.pack(pady=(20, 10))
+        self.header = tk.Frame(self.main_frame, bg=self.primary_bg)
+        self.header.pack(fill="x", padx=20, pady=(20, 10))
+        self.header.grid_columnconfigure(0, weight=1)
+
+        self.title_label = tk.Label(self.header, text="Browse Equipment", font=("Arial", 24, "bold"), anchor="center", **self.colors)
+        self.title_label.grid(row=0, column=0, sticky="ew")
+
+        self.search_area = tk.Frame(self.header, bg=self.primary_bg)
+        self.search_area.grid(row=0, column=1, sticky="e")
+
+        self.search_toggle_btn = tk.Button(self.search_area, text="🔍", font=("Arial", 14), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=10, pady=2, command=self._open_search)
+        self.search_toggle_btn.pack()
 
         self.loading_label = tk.Label(self.main_frame, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
 
         threading.Thread(target=self._fetch_equipment_data, daemon=True).start()
+
+    def _open_search(self):
+        if not hasattr(self, "all_equipment"):
+            return
+
+        self.search_toggle_btn.pack_forget()
+        self.title_label.config(text="Browse Equipment - Search", anchor="w")
+
+        self.search_var = tk.StringVar()
+        self.search_entry = tk.Entry(self.search_area, textvariable=self.search_var, width=25, font=("Arial", 12), bg="#334155", fg="#FFFFFF", insertbackground="#FFFFFF", relief="flat")
+        self.search_entry.pack(side="left", ipady=4, padx=(0, 8))
+        self.search_entry.bind("<Return>", lambda e: self._run_search())
+        self.search_entry.focus_set()
+        self.search_entry.bind("<Control-BackSpace>", lambda e: self.clear_search_entry())
+
+        self.search_btn = tk.Button(self.search_area, text="Search", font=("Arial", 12, "bold"), bg="#4AD380", fg="#0F172A", cursor="hand2", bd=0, padx=12, pady=4, command=self._run_search)
+        self.search_btn.pack(side="left", padx=(0, 8))
+
+        self.close_search_btn = tk.Button(self.search_area, text="X", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=10, pady=4, command=self._close_search)
+        self.close_search_btn.pack(side="left")
+
+    def _reset_search_ui(self):
+        for widget in self.search_area.winfo_children():
+            widget.destroy()
+
+        self.search_toggle_btn = tk.Button(self.search_area, text="🔍", font=("Arial", 14), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=10, pady=2, command=self._open_search)
+        self.search_toggle_btn.pack()
+        self.title_label.config(anchor="center")
+        self.search_query = ""
+
+    def _close_search(self):
+        self._reset_search_ui()
+        if getattr(self, "current_view", "") == "search":
+            self._show_departments()
+
+    def _back_from_search(self):
+        self._reset_search_ui()
+        self._show_departments()
+
+    def _run_search(self):
+        query = self.search_var.get().strip()
+        if not query:
+            self._show_departments()
+            return
+
+        self.search_query = query
+        self.search_page = 0
+        self._render_search_results()
+
+    def clear_search_entry(self):
+        self.search_entry.delete(0, tk.END)
+
+    def _render_search_results(self):
+        self.current_view = "search"
+        self._clear_content()
+        self.title_label.config(text="Browse Equipment - Search")
+
+        back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=self._back_from_search)
+        back_btn.pack(anchor="w", padx=0, pady=(10, 15))
+
+        q = self.search_query.lower()
+        entries = []
+
+        for d in self.all_departments:
+            if q in d["name"].lower():
+                items = [i for i in self.all_equipment if i.get("department_id") == d["id"]]
+                entries.append(("department", d, items))
+
+        for c in self.all_categories:
+            if q in c["name"].lower():
+                dept = next((d for d in self.all_departments if d["id"] == c.get("department_id")), None)
+                items = [i for i in self.all_equipment if i.get("category_id") == c["id"]]
+                entries.append(("category", c, (dept, items)))
+
+        for i in self.all_equipment:
+            if q in i["name"].lower():
+                entries.append(("equipment", i, None))
+
+        self.search_results = entries
+
+        if not entries:
+            tk.Label(self.content_frame, text=f"No results found for '{self.search_query}'.", font=("Arial", 14), bg="#1E293B", fg="#94A3B8").pack(pady=20)
+            return
+
+        start_index = self.search_page * GRID_ITEMS_PER_PAGE
+        page_entries = entries[start_index:start_index + GRID_ITEMS_PER_PAGE]
+
+        cards_row = self._generic_grid(self.content_frame)
+
+        row, col = 0, 0
+        for kind, data, extra in page_entries:
+            if kind == "department":
+                self._create_department_card(cards_row, data["name"], extra, row, col)
+            elif kind == "category":
+                dept, items = extra
+                self._create_search_category_card(cards_row, data, dept, items, row, col)
+            else:
+                self._create_equipment_card(cards_row, data, row, col, show_location=True)
+            col += 1
+            if col > 2:
+                col, row = 0, row + 1
+
+        self._search_pagination_controls()
+
+    def _search_pagination_controls(self):
+        total_pages = max(1, -(-len(self.search_results) // GRID_ITEMS_PER_PAGE))
+        if total_pages <= 1:
+            return
+
+        nav_frame = tk.Frame(self.content_frame, bg=self.primary_bg)
+        nav_frame.pack(pady=(20, 10))
+
+        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.search_page > 0 else "disabled", command=self._go_previous_search_page).pack(side="left", padx=5)
+        tk.Label(nav_frame, text=f"Page {self.search_page + 1} of {total_pages}", font=("Arial", 12), bg=self.primary_bg, fg="#94A3B8").pack(side="left", padx=15)
+        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.search_page < total_pages - 1 else "disabled", command=self._go_next_search_page).pack(side="left", padx=5)
+
+    def _go_next_search_page(self):
+        self.search_page += 1
+        self._render_search_results()
+
+    def _go_previous_search_page(self):
+        self.search_page -= 1
+        self._render_search_results()
+
+    def _create_search_category_card(self, parent, category, dept, items, row, col):
+        card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
+        card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+        card.grid_propagate(False)
+
+        dept_name = dept["name"] if dept else "N/A"
+        dept_label = tk.Label(card, text=dept_name, font=("Arial", 10), bg="#334155", fg="#94A3B8")
+        dept_label.pack(pady=(10, 0))
+
+        name_label = tk.Label(card, text=category["name"], font=("Arial", 18, "bold"), bg="#334155", fg="#FFFFFF")
+        name_label.pack(pady=(15, 20))
+
+        count_label = tk.Label(card, text=f"{len(items)} item(s)", font=("Arial", 12), bg="#334155", fg="#94A3B8")
+        count_label.pack(pady=(0, 10))
+
+        for widget in (card, dept_label, name_label, count_label):
+            widget.bind("<Button-1>", lambda e, c=category, d=dept: self._open_category_from_search(c, d))
+
+    def _open_category_from_search(self, category, dept):
+        if dept is None:
+            return
+        dept_items = [i for i in self.all_equipment if i.get("department_id") == dept["id"]]
+        self.current_department_id = dept["id"]
+        self.current_department = dept["name"]
+        self.current_dept_items = dept_items
+        self.department_categories = [c for c in self.all_categories if c["department_id"] == dept["id"]]
+        self.current_category_page = 0
+        self._reset_search_ui()
+        self._show_equipment_by_category(category["name"], [i for i in dept_items if i.get("category_id") == category["id"]])
 
     def _fetch_equipment_data(self):
         equipment_list = get_all_equipment()
@@ -236,23 +399,53 @@ class BrowseEquipmentPage:
         self.current_page = 0
         self._render_category_page()
 
-    def _create_equipment_card(self, parent, item, row, col):
+    def _create_equipment_card(self, parent, item, row, col, show_location=False):
         self.card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
         self.card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         self.card.grid_propagate(False)
 
-        name_label = tk.Label(self.card, text=item["name"], font=("Arial", 16, "bold"), bg="#334155", fg="#FFFFFF")
-        name_label.pack(pady=(30, 30))
-
-        status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155", fg="#4ADE80" if item["status"] == "Available" else "#F87171")
-        status_label.pack(pady=(0, 10))
-
+        widgets = [self.card]
         condition = item.get("condition", "Good")
         condition_color = {"Good": "#4ADE80", "Fair": "#FBBF24"}.get(condition, "#F87171")
-        condition_label = tk.Label(self.card, text=f"Condition: {condition}", font=("Arial", 14), bg="#334155", fg=condition_color)
-        condition_label.pack(pady=5)
+        status_color = "#4ADE80" if item["status"] == "Available" else "#F87171"
 
-        for widget in (self.card, name_label, status_label):
+        if show_location:
+            dept_name = (item.get("departments") or {}).get("name", "N/A")
+            cat_name = (item.get("categories") or {}).get("name", "N/A")
+
+            location_label = tk.Label(self.card, text=f"{dept_name} > {cat_name}", font=("Arial", 10), bg="#334155",
+                                      fg="#94A3B8")
+            location_label.pack(pady=(12, 0))
+
+            name_label = tk.Label(self.card, text=item["name"], font=("Arial", 16, "bold"), bg="#334155", fg="#FFFFFF")
+            name_label.pack(pady=(15, 15))
+
+            info_row = tk.Frame(self.card, bg="#334155")
+            info_row.pack()
+
+            status_label = tk.Label(info_row, text=item["status"], font=("Arial", 13, "bold"), bg="#334155", fg=status_color)
+            status_label.pack(side="left", pady=5)
+
+            separator = tk.Label(info_row, text=" | ", font=("Arial", 13), bg="#334155", fg="#94A3B8")
+            separator.pack(side="left", pady=5)
+
+            condition_label = tk.Label(info_row, text=condition, font=("Arial", 13), bg="#334155", fg=condition_color)
+            condition_label.pack(side="left", pady=5)
+
+            widgets.extend([location_label, name_label, info_row, status_label, separator, condition_label])
+        else:
+            name_label = tk.Label(self.card, text=item["name"], font=("Arial", 18, "bold"), bg="#334155", fg="#FFFFFF")
+            name_label.pack(pady=(30, 30))
+
+            status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155", fg=status_color)
+            status_label.pack(pady=(0, 10))
+
+            condition_label = tk.Label(self.card, text=f"Condition: {condition}", font=("Arial", 14), bg="#334155",fg=condition_color)
+            condition_label.pack(pady=(0, 5))
+
+            widgets.extend([name_label, status_label, condition_label])
+
+        for widget in widgets:
             widget.bind("<Button-1>", lambda e, it=item: self._show_equipment_details(it))
 
     def _render_category_page(self):
@@ -333,6 +526,12 @@ class BrowseEquipmentPage:
         self.modal.place(relx=0.5, rely=0.5, anchor="center")
         self.modal.pack_propagate(False)
 
+        self.cancel_area = tk.Frame(self.modal, bg="#334155")
+        self.cancel_area.pack(fill="x", pady=10)
+
+        self.close_btn = tk.Button(self.cancel_area, text="X", font=("Arial", 12), bg="#F93111", fg="#FFFFFF", cursor="hand2", bd=0, width=3, command=self.details_overlay.destroy)
+        self.close_btn.pack(side="right", pady=5, padx=(0, 10))
+
         self.name_label = tk.Label(self.modal, text=item["name"], font=("Arial", 20, "bold"), bg="#334155", fg="#94A3B8")
         self.name_label.pack(pady=5)
 
@@ -348,10 +547,7 @@ class BrowseEquipmentPage:
         is_available = item.get("status") == "Available" and condition not in ("Damaged", "Under Repair")
 
         self.reserve_btn = tk.Button(self.modal, text="Reserve" if is_available else item.get("status", "Unavailable"), font=("Arial", 14, "bold"), bg="#3AFD50" if is_available else "#F87171", fg="#0F172A", cursor="hand2" if is_available else "arrow", state="normal" if is_available else "disabled", disabledforeground="#FFFFFF",command=lambda: self._confirm_reservation(item))
-        self.reserve_btn.pack(pady=(80, 5))
-
-        self.close_btn = tk.Button(self.modal, text="Close", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", command=self.details_overlay.destroy)
-        self.close_btn.pack(pady=5)
+        self.reserve_btn.pack(pady=(60, 5))
 
     def _category_by_name(self, name):
         return next((c for c in self.department_categories if c["name"] == name), None)
@@ -441,6 +637,10 @@ class BrowseEquipmentPage:
             overlay.destroy()
 
         view = getattr(self, "current_view", "departments")
+
+        if view == "search":
+            self._render_search_results()
+            return
 
         if view in ("categories", "equipment"):
             dept = next((d for d in self.all_departments if d["id"] == self.current_department_id), None)

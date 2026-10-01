@@ -178,11 +178,11 @@ class ManageInventoryPage:
         tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_department_page < total_pages - 1 else "disabled", command=self._go_next_department_page).pack(side="left", padx=5)
 
     def _go_next_department_page(self):
-        self.current_category_page += 1
+        self.current_department_page += 1
         self._show_departments()
 
     def _go_previous_department_page(self):
-        self.current_category_page -= 1
+        self.current_department_page -= 1
         self._show_departments()
 
     def _create_department_card(self, parent, department, items, row, col):

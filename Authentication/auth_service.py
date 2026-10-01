@@ -19,6 +19,9 @@ def login_user(identifier: str, plain_password: str):
     stored_hash = user["password_hash"].encode("utf-8")
 
     if bcrypt.checkpw(plain_password.encode("utf-8"), stored_hash):
+        if user.get("is_banned"):
+            messagebox.showinfo("Account Banned!", "Your account has been banned. Please contact the administrator.")
+            return None
         return user
     else:
         messagebox.showinfo("Error", "Incorrect Password.")
@@ -134,6 +137,42 @@ def get_dashboard_summary(user_id):
             "total": 0,
             "due_soon": 0
         }
+
+def get_all_users():
+    try:
+        query: Any = supabase.table("users").select("id, username, role, is_banned, created_at").eq("role", "user")
+        response = query.execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching users: {e}")
+        return []
+
+def set_user_banned(user_id, banned: bool):
+    try:
+        query: Any = supabase.table("users").update({"is_banned": banned}).eq("id", user_id).eq("role", "user")
+        response = query.execute()
+
+        if not response.data:
+            return False
+
+        if banned:
+            reject: Any = supabase.table("reservation").update({
+                "status": "Rejected",
+                "status_updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("user_id", user_id).eq("status", "Pending")
+            reject.execute()
+
+        return True
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error updating user: {e}")
+
+def user_has_borrowed_items(user_id):
+    try:
+        query: Any = supabase.table("reservation").select("id").eq("user_id", user_id).in_("status", ["Approved", "Return Pending"])
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error checking borrowed items: {e}")
 
 def get_all_departments():
     try:
@@ -301,8 +340,11 @@ def get_pending_returns():
 
 def confirm_return(reservation_id):
     try:
-        query: Any = supabase.table("reservation").update(
-            {"status": "Returned"}
+        query: Any = supabase.table("reservation").update({
+            "status": "Returned",
+            "status_updated_at": datetime.now(timezone.utc).isoformat(),
+            "notification_seen": False,
+        }
         ).eq("id", reservation_id).eq("status", "Return Pending")
         response = query.execute()
 
@@ -352,7 +394,7 @@ def get_borrowed_reservations():
 
 def get_user_notification(user_id):
     try:
-        query: Any = supabase.table("reservation").select("*, equipment(name)").eq("user_id", user_id).in_("status", ["Approved", "Rejected"]).eq("notification_seen", False)
+        query: Any = supabase.table("reservation").select("*, equipment(name)").eq("user_id", user_id).in_("status", ["Approved", "Rejected", "Returned"]).eq("notification_seen", False)
         response = query.execute()
         return response.data or []
     except Exception as e:
@@ -541,3 +583,16 @@ def change_username(user_id, new_username):
         messagebox.showerror("Database Error", f"Error changing username: {e}")
         return False
 
+def get_reservation_report(days=None):
+    try:
+        query: Any = supabase.table("reservation").select("*, users(username), equipment(name, categories(name), departments(name))")
+
+        if days is not None:
+            since = date.today() - timedelta(days=days)
+            query = query.gte("reserved_date", str(since))
+
+        response = query.order("id", desc=False).execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching report: {e}")
+        return []

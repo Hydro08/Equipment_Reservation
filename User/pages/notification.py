@@ -5,6 +5,8 @@ from datetime import datetime, timezone, date
 from tkinter import messagebox
 from Authentication.auth_service import get_user_notification,dismiss_notification
 
+NOTIFICATIONS_PER_PAGE = 6
+
 class NotificationPage:
 
     primary_bg = "#1E293B"
@@ -14,6 +16,7 @@ class NotificationPage:
         self.parent = parent
         self.colors = color
         self.user = user
+        self.current_page = 0
 
         self._build_ui()
 
@@ -58,13 +61,21 @@ class NotificationPage:
         dated = [(self._parse_dt(n.get("status_updated_at")), n) for n in self.all_notifications]
         dated.sort(key=lambda pair: pair[0] or oldest, reverse=True)
 
+        total_pages = max(1, -(-len(dated) // NOTIFICATIONS_PER_PAGE))
+        self.current_page = min(self.current_page, total_pages-1)
+
+        start = self.current_page * NOTIFICATIONS_PER_PAGE
+        page_entries = dated[start:start + NOTIFICATIONS_PER_PAGE]
+
         last_label = None
-        for dt, note in dated:
+        for dt, note in page_entries:
             label = self._date_label(dt)
             if label != last_label:
                 tk.Label(self.content_frame, text=label, font=("Arial", 14, "bold"), bg=self.primary_bg, fg="#94A3B8").pack(anchor="w", padx=15, pady=(15, 0))
                 last_label = label
             self._create_notification_row(note)
+
+        self._pagination_controls(total_pages)
 
     def _create_notification_row(self, note):
         equipment_data = note.get("equipment") or {}
@@ -74,6 +85,9 @@ class NotificationPage:
         if status == "Approved":
             message = f"We accepted your request for {equipment_name}. Please return this after 3 days."
             color = "#4ADE80"
+        elif status == "Returned":
+            message = f"Thank you for returning {equipment_name}! We hope it served you well."
+            color = "#60A5FA"
         else:
             message = f"Sorry, we rejected your request for {equipment_name}."
             color = "#F87171"
@@ -121,3 +135,23 @@ class NotificationPage:
         if days < 14:
             return "Last week"
         return dt.strftime("%b %d, %Y")
+
+    def _pagination_controls(self, total_pages):
+        if total_pages <= 1:
+            return
+
+        nav_frame = tk.Frame(self.content_frame, bg=self.primary_bg)
+        nav_frame.pack(pady=(20, 10))
+
+        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page > 0 else "disabled", command=self._go_previous_page).pack(side="left", padx=5)
+        tk.Label(nav_frame, text=f"Page {self.current_page + 1} of {total_pages}", font=("Arial", 12),
+                 bg=self.primary_bg, fg="#94A3B8").pack(side="left", padx=15)
+        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page < total_pages - 1 else "disabled", command=self._go_next_page).pack(side="left", padx=5)
+
+    def _go_next_page(self):
+        self.current_page += 1
+        self._render_list()
+
+    def _go_previous_page(self):
+        self.current_page -= 1
+        self._render_list()
