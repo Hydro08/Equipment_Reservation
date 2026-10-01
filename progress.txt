@@ -219,6 +219,7 @@ ADDED
 - Reports: "Reservations per Department" and "Equipment Needing Attention" (Damaged / Under Repair) panels
 - "Pending Returns" card in the Admin Dashboard (returns waiting for admin confirmation)
 - Pending Request and Borrowed Equipment tabs in the user My Reservation page
+- Manage Users: live search by username and All / Active / Banned filter tabs
 
 CHANGED
 - Change Username and Change Password windows now open centered on the screen instead of the top left
