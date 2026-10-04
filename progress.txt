@@ -230,3 +230,28 @@ FIXED
 - Removed the extra "Pending Return" tab in Manage Reservation that caused a KeyError
 - Missing "returning" in the fallback of get_admin_dashboard_summary
 - set_user_banned / user_has_borrowed_items now return a value when an error occurs
+
+Oct 2, 2026 (Friday)
+- Busy
+
+Oct 3, 2026 (Saturday)
+- Busy
+
+Oct 4, 2026 (Sunday)
+ADDED
+- Search filter in Manage Reservation (Manage Request, Available Equipment, Borrowed Equipment)
+- Search filter in Manage Users
+- Calendar view in Manage Reservation (monthly grid, per-day popup with pagination)
+
+CHANGED
+- Manage Reservation: replaced the long rows with a 3-column card grid (6 cards per page) across all tabs
+- Manage Request: replaced Accept/Reject buttons with ✓ and X
+- Manage Users: moved the search label and entry into search_frame
+
+FIXED
+- AttributeError in ManageReservationPage caused by card method names not matching card_builders
+- Search in Manage Reservation having no effect (rendered current_data instead of filtered_data)
+- Search entry text not visible (dark text on dark background)
+- Incorrect page count in _refresh_after_action when a search is active
+- TclError in Manage Users header caused by mixing pack and grid
+- Ban/unban success message showing twice, and appearing before the actual update

@@ -48,7 +48,7 @@ class ReportsPage:
         self.period_box.pack(side="left", padx=(0, 10), ipady=3)
         self.period_box.bind("<<ComboboxSelected>>", lambda e: self._load())
 
-        self.export_btn = tk.Button(controls, text="Exports CSV", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", cursor="hand2", bd=0, padx=14, pady=4, state="disabled", command=self._export_csv)
+        self.export_btn = tk.Button(controls, text="Export CSV", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", cursor="hand2", bd=0, padx=14, pady=4, state="disabled", command=self._export_csv)
         self.export_btn.pack(side="left")
 
         self.body = tk.Frame(self.reports_panel, bg=self.primary_bg)

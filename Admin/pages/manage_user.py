@@ -34,8 +34,14 @@ class ManageUsersPage:
         self.title_label.grid(row=0, column=0, sticky="w")
 
         self.search_var = tk.StringVar()
-        self.search_entry = tk.Entry(header, textvariable=self.search_var, width=28, font=("Arial", 12), bg="#334155", fg="#FFFFFF", insertbackground="#FFFFFF", relief="flat")
-        self.search_entry.grid(row=0, column=1, sticky="e", ipady=4)
+        self.search_frame = tk.Frame(header, bg=self.primary_bg)
+        self.search_frame.grid(row=0, column=1, sticky="e")
+
+        tk.Label(self.search_frame, text="🔍", font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg).pack(
+            side="left", padx=(0, 8))
+        self.search_entry = tk.Entry(self.search_frame, textvariable=self.search_var, width=28, font=("Arial", 12),bg="#334155", fg="#FFFFFF", insertbackground="#FFFFFF", relief="flat")
+        self.search_entry.pack(side="left", ipady=4)
+
         self.search_entry.bind("<Control-BackSpace>", lambda e: (self.search_entry.delete(0, tk.END), "break")[1])
         # noinspection PyTypeChecker
         self.search_var.trace_add("write", lambda *args: self._on_search_change())
@@ -182,17 +188,6 @@ class ManageUsersPage:
             action = "Ban" if banned else "Unban"
             if not messagebox.askyesno("Confirm", f"{action} '{user['username']}'?"):
                 return
-
-        if banned:
-            messagebox.showinfo(
-                "Successfully Banned",
-                f"{user['username']} was successfully banned."
-            )
-        else:
-            messagebox.showinfo(
-                "Successfully Unbanned",
-                f"{user['username']} was successfully unbanned."
-            )
 
         if set_user_banned(user["id"], banned):
             action = "banned" if banned else "unbanned"

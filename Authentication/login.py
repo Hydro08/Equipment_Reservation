@@ -111,7 +111,7 @@ class LoginWindow:
         self.password_entry.bind("<Control-BackSpace>", lambda event: self.clear_entry(event))
 
         self.show_pass = tk.BooleanVar(value=False)
-        self.show_pass_checkbox = tk.show_pass_checkbox = (
+        self.show_pass_checkbox = (
             tk.Checkbutton(self.password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor="#0F172A", activeforeground="white", cursor="hand2", variable=self.show_pass, command=lambda: self._toggle_password())
         )
         self.show_pass_checkbox.pack(pady=(20, 0), side="left")

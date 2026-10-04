@@ -3,6 +3,7 @@ import threading
 
 from datetime import date
 from tkinter import messagebox
+from Admin.pages.reservation_calendar import ReservationCalendar
 
 from Authentication.auth_service import (
     get_pending_reservation,
@@ -12,14 +13,24 @@ from Authentication.auth_service import (
     reject_return,
     get_available_equipment,
     get_borrowed_reservations,
+    get_reservation_report
 )
 
-ITEMS_PER_PAGE = 4
+COLUMNS = 3
+ROWS_PER_PAGE = 3
+ITEMS_PER_PAGE = COLUMNS * ROWS_PER_PAGE
 
 class ManageReservationPage:
 
     primary_bg = "#1E293B"
     primary_fg = "#FFFFFF"
+
+    card_bg = "#334155"
+    muted_fg = "#94A3B8"
+    green = "#4ADE80"
+    red = "#F87171"
+    yellow = "#FBBF24"
+    dark_fg = "#0F172A"
 
     active_tab_bg = "#4ADE80"
     active_tab_fg = "#0F172A"
@@ -31,7 +42,10 @@ class ManageReservationPage:
         ("return", "Manage Returning", "No pending returns."),
         ("available", "Available Equipment", "No available equipment."),
         ("borrowed", "Borrowed Equipment", "No borrowed equipment."),
+        ("calendar", "Calendar", "No Reservation.")
     ]
+
+    SEARCHABLE = {"request", "available", "borrowed"}
 
     def __init__(self, parent, colors, initial_tab="request"):
         self.parent = parent
@@ -39,12 +53,20 @@ class ManageReservationPage:
         self.current_page = 0
         self.mode = initial_tab
         self.current_data = []
+        self.filtered_data = []
 
         self.fetchers = {
             "request": get_pending_reservation,
             "return": get_pending_returns,
             "available": get_available_equipment,
             "borrowed": get_borrowed_reservations,
+            "calendar": lambda: get_reservation_report(None)
+        }
+        self.card_builders = {
+            "request": self._create_reservation_card,
+            "return": self._create_reservation_card,
+            "available": self._create_available_card,
+            "borrowed": self._create_borrowed_card
         }
         self.empty_texts = {mode: empty for mode, _, empty in self.TABS}
 
@@ -66,13 +88,40 @@ class ManageReservationPage:
             btn.pack(side="left", padx=5)
             self.tab_buttons[mode] = btn
 
+        self._build_search_bar()
+
         self.body_frame = tk.Frame(self.manage_reservation_panel, bg=self.primary_bg)
         self.body_frame.pack(fill="both", expand=True)
 
         self.content_frame = None
         self.loading_label = None
+        self.grid_frame = None
 
         self._switch_tab(self.mode)
+
+    def _build_search_bar(self):
+        self.search_var = tk.StringVar()
+        self.search_var.trace_add("write", self._on_search_changed)
+        self._search_visible = False
+
+        self.search_frame = tk.Frame(self.manage_reservation_panel, bg=self.primary_bg)
+
+        tk.Label(self.search_frame, text="🔍", font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg).pack(side="left", padx=(0, 8))
+
+        self.search_entry = tk.Entry(self.search_frame, textvariable=self.search_var, font=("Arial", 13), width=40, bg=self.card_bg, fg=self.primary_fg, insertbackground=self.primary_fg, relief="flat", bd=0)
+        self.search_entry.pack(side="left", ipady=6, ipadx=6)
+        self.search_entry.bind("<Control-BackSpace>", lambda e: (self.search_entry.delete(0, tk.END), "break")[1])
+
+        tk.Button(self.search_frame, text="X", font=("Arial", 11, "bold"), bg=self.card_bg, fg=self.primary_fg, cursor="hand2", bd=0, padx=10, pady=4, command=lambda: self.search_var.set("")).pack(side="left", padx=(6, 0))
+
+    def _update_search_visibility(self):
+        should_show = self.mode in self.SEARCHABLE
+        if should_show and not self._search_visible:
+            self.search_frame.pack(before=self.body_frame, pady=(15, 0))
+            self._search_visible = True
+        elif not should_show and self._search_visible:
+            self.search_frame.pack_forget()
+            self._search_visible = False
 
     def _update_tab_styles(self):
         for mode, btn in self.tab_buttons.items():
@@ -86,6 +135,9 @@ class ManageReservationPage:
         self.current_page = 0
         self._update_tab_styles()
         self._show_loading_and_fetch()
+
+        self.search_var.set("")
+        self._update_search_visibility()
 
     def _show_loading_and_fetch(self):
         for widget in self.body_frame.winfo_children():
@@ -109,10 +161,36 @@ class ManageReservationPage:
 
         self.loading_label.destroy()
         self.current_data = data
+        self.filtered_data = self._apply_filter(data)
 
         self.content_frame = tk.Frame(self.body_frame, bg=self.primary_bg)
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
+        self._render_page()
+
+    def _search_text_for(self, item):
+        if self.mode == "available":
+            return " ".join([
+                str(item.get("name", "")),
+                str((item.get("departments") or {}).get("name", "")),
+                str((item.get("categories") or {}).get("name", ""))
+            ])
+        return " ".join([
+            str((item.get("users") or {}).get("username", "")),
+            str((item.get("equipment") or {}).get("name", ""))
+        ])
+
+    def _apply_filter(self, data):
+        query = self.search_var.get().strip().lower()
+        if self.mode not in self.SEARCHABLE or not query:
+            return data
+        return [item for item in data if query in self._search_text_for(item).lower()]
+
+    def _on_search_changed(self, *_):
+        if not self.content_frame or not self.content_frame.winfo_exists():
+            return
+        self.filtered_data = self._apply_filter(self.current_data)
+        self.current_page = 0
         self._render_page()
 
     def _clear_content(self):
@@ -121,95 +199,85 @@ class ManageReservationPage:
 
     def _render_page(self):
         self._clear_content()
-        data = self.current_data
 
-        if not data:
-            tk.Label(self.content_frame, text=self.empty_texts[self.mode], font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg, height=50).pack(pady=20)
+        if self.mode == "calendar":
+            ReservationCalendar(self.content_frame, self.current_data)
             return
 
-        items_per_page = 5 if self.mode == "available" else ITEMS_PER_PAGE
+        data = self.filtered_data
 
-        start_index = self.current_page * items_per_page
-        end_index = start_index + items_per_page
+        if not data:
+            searching = self.mode in self.SEARCHABLE and self.search_var.get().strip()
+            text = "No result found." if searching else self.empty_texts[self.mode]
+            tk.Label(self.content_frame, text=text, font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg, height=50).pack(pady=20)
+            return
 
-        for item in data[start_index:end_index]:
-            if self.mode == "available":
-                self._create_available_row(item)
-            elif self.mode == "borrowed":
-                self._create_borrowed_row(item)
-            else:
-                self._create_reservation_row(item)
+        start_index = self.current_page * ITEMS_PER_PAGE
+        end_index = start_index + ITEMS_PER_PAGE
+
+        self.grid_frame = tk.Frame(self.content_frame, bg=self.primary_bg)
+        self.grid_frame.pack(fill="x")
+        for col in range(COLUMNS):
+            self.grid_frame.grid_columnconfigure(col, weight=1, uniform="card")
+
+        build_card = self.card_builders[self.mode]
+        for i, item in enumerate(data[start_index:end_index]):
+            card = tk.Frame(self.grid_frame, bg=self.card_bg)
+            card.grid(row=i // COLUMNS, column=i % COLUMNS, padx=8, pady=8, sticky="nsew")
+            build_card(card, item)
 
         self._pagination_controls(len(data))
 
-    def _create_reservation_row(self, reservation):
-        row = tk.Frame(self.content_frame, bg="#334155")
-        row.pack(fill="x", padx=10, pady=6)
+    def _card_info_frame(self, card):
+        info = tk.Frame(card, bg=self.card_bg)
+        info.pack(fill="x", padx=15, pady=(15, 8))
+        return info
 
-        user_data = reservation.get("users")
-        username = user_data.get("username") if user_data else "Unknown User"
+    def _info_label(self, parent, text, font, fg):
+        tk.Label(parent, text=text, font=font, bg=self.card_bg, fg=fg, anchor="w", justify="left", wraplength=380).pack(fill="x")
 
-        equipment_data = reservation.get("equipment")
-        equipment_name = equipment_data.get("name") if equipment_data else "Unknown Equipment"
+    def _create_reservation_card(self, card, reservation):
+        username = (reservation.get("users") or {}).get("username", "Unknown User")
+        equipment_name = (reservation.get("equipment") or {}).get("name", "Unknown Equipment")
 
-        info_frame = tk.Frame(row, bg="#334155")
-        info_frame.pack(side="left", fill="x", expand=True, padx=15, pady=15)
+        info = self._card_info_frame(card)
+        self._info_label(info, username, ("Arial", 16, "bold"), self.primary_fg)
+        self._info_label(info, f"Equipment: {equipment_name}", ("Arial", 12), self.muted_fg)
+        self._info_label(info, f"Return: {reservation.get('return_date', 'N/A')}", ("Arial", 11), self.muted_fg)
 
-        tk.Label(info_frame, text=username, font=("Arial", 16, "bold"), bg="#334155", fg=self.primary_fg, anchor="w").pack(fill="x")
-        tk.Label(info_frame, text=f"Equipment: {equipment_name}", font=("Arial", 12), bg="#334155", fg="#94A3B8", anchor="w").pack(fill="x")
-
-        dates_text = f"Reserved: {reservation.get('reserved_date', 'N/A')} | Return: {reservation.get('return_date', 'N/A')}"
-        tk.Label(info_frame, text=dates_text, font=("Arial", 11), bg="#334155", fg="#94A3B8", anchor="w").pack(fill="x")
-
-        button_frame = tk.Frame(row, bg="#334155")
-        button_frame.pack(side="right", padx=15, pady=15)
+        button_frame = tk.Frame(card, bg=self.card_bg)
+        button_frame.pack(fill="x", padx=15, pady=(0, 15))
 
         if self.mode == "request":
-            tk.Button(button_frame, text="Accept", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5, command=lambda: self.handle_decision(reservation, "Approved")).pack(side="left", padx=5)
-
-            tk.Button(button_frame, text="Reject", font=("Arial", 12, "bold"), bg="#F87171", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5,command=lambda: self.handle_decision(reservation, "Rejected")).pack(side="left", padx=5)
+            tk.Button(button_frame, text="X", font=("Arial", 14, "bold"), bg=self.red, fg=self.dark_fg, cursor="hand2", bd=0, width=4, pady=3, command=lambda: self.handle_decision(reservation, "Rejected")).pack(side="right", padx=(8, 0))
+            tk.Button(button_frame, text="✓", font=("Arial", 14, "bold"), bg=self.green, fg=self.dark_fg, cursor="hand2", bd=0, width=4, pady=3, command=lambda: self.handle_decision(reservation, "Approved")).pack(side="right")
         else:
-            tk.Button(button_frame, text="Confirm Return", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5, command=lambda: self.handle_return_decision(reservation, True)).pack(side="left", padx=5)
-            tk.Button(button_frame, text="Not Yet Returned", font=("Arial", 12, "bold"), bg="#F87171", fg="#0F172A", cursor="hand2", bd=0, padx=15, pady=5, command=lambda: self.handle_return_decision(reservation, False)).pack(side="left", padx=5)
+            tk.Button(button_frame, text="Not Yet Returned", font=("Arial", 11, "bold"), bg=self.red, fg=self.dark_fg, cursor="hand2", bd=0, padx=10, pady=5, command=lambda: self.handle_return_decision(reservation, False)).pack(side="right", padx=(8, 0))
+            tk.Button(button_frame, text="Confirm Return", font=("Arial", 11, "bold"), bg=self.green, fg=self.dark_fg, cursor="hand2", bd=0, padx=10, pady=5, command=lambda: self.handle_return_decision(reservation, True)).pack(side="right")
 
-    def _create_available_row(self, item):
-        row = tk.Frame(self.content_frame, bg="#334155")
-        row.pack(fill="x", padx=10, pady=6)
-
+    def _create_available_card(self, card, item):
         category_name = (item.get("categories") or {}).get("name", "N/A")
         department_name = (item.get("departments") or {}).get("name", "N/A")
 
-        info_frame = tk.Frame(row, bg="#334155")
-        info_frame.pack(side="left", fill="x", expand=True, padx=15, pady=15)
+        info = self._card_info_frame(card)
+        self._info_label(info, item.get("name", "Unknown"), ("Arial", 16, "bold"), self.primary_fg)
+        self._info_label(info, f"Department: {department_name}", ("Arial", 12), self.muted_fg)
+        self._info_label(info, f"Category: {category_name}", ("Arial", 12), self.muted_fg)
 
-        tk.Label(info_frame, text=item.get("name", "Unknown Equipment"), font=("Arial", 16, "bold"), bg="#334155", fg=self.primary_fg, anchor="w").pack(fill="x")
-        tk.Label(info_frame, text=f"Department: {department_name}  |  Category: {category_name}", font=("Arial", 12), bg="#334155", fg="#94A3B8", anchor="w").pack(fill="x")
+        tk.Label(card, text="Available", font=("Arial", 13, "bold"), bg=self.card_bg, fg=self.green, anchor="e").pack(fill="x", padx=15, pady=(0, 15))
 
-        tk.Label(row, text="Available", font=("Arial", 13, "bold"), bg="#334155", fg="#4ADE80").pack(side="right", padx=25)
+    def _create_borrowed_card(self, card, reservation):
+        username = (reservation.get("users") or {}).get("username", "Unknown User")
+        equipment_name = (reservation.get("equipment") or {}).get("name", "Unknown Equipment")
 
-    def _create_borrowed_row(self, reservation):
-        row = tk.Frame(self.content_frame, bg="#334155")
-        row.pack(fill="x", padx=10, pady=6)
-
-        user_data = reservation.get("users")
-        username = user_data.get("username") if user_data else "Unknown User"
-
-        equipment_data = reservation.get("equipment")
-        equipment_name = equipment_data.get("name") if equipment_data else "Unknown Equipment"
-
-        info_frame = tk.Frame(row, bg="#334155")
-        info_frame.pack(side="left", fill="x", expand=True, padx=15, pady=15)
-
-        tk.Label(info_frame, text=username, font=("Arial", 16, "bold"), bg="#334155", fg=self.primary_fg, anchor="w").pack(fill="x")
-        tk.Label(info_frame, text=f"Equipment: {equipment_name}", font=("Arial", 12), bg="#334155", fg="#94A3B8", anchor="w").pack(fill="x")
-
-        dates_text = f"Borrowed: {reservation.get('reserved_date', 'N/A')} | Due: {reservation.get('return_date', 'N/A')}"
-        tk.Label(info_frame, text=dates_text, font=("Arial", 11),bg="#334155", fg="#94A3B8", anchor="w").pack(fill="x")
+        info = self._card_info_frame(card)
+        self._info_label(info, username, ("Arial", 16, "bold"), self.primary_fg)
+        self._info_label(info, f"Equipment: {equipment_name}", ("Arial", 12), self.muted_fg)
+        self._info_label(info, f"Due: {reservation.get('return_date', 'N/A')}", ("Arial", 11), self.muted_fg)
 
         badge = self._due_badge(reservation.get("return_date"))
-        if badge:
-            text, color = badge
-            tk.Label(row, text=text, font=("Arial", 13, "bold"),bg="#334155", fg=color).pack(side="right", padx=25)
+        text, color = badge if badge else ("", self.muted_fg)
+        tk.Label(card, text=text, font=("Arial", 13, "bold"), bg=self.card_bg, fg=color, anchor="e").pack(fill="x", padx=15, pady=(0, 15))
 
     @staticmethod
     def _due_badge(return_date_str):
@@ -258,17 +326,16 @@ class ManageReservationPage:
 
     def _refresh_after_action(self):
         self.current_data = self.fetchers[self.mode]()
+        self.filtered_data = self._apply_filter(self.current_data)
 
-        items_per_page = 5 if self.mode == "available" else ITEMS_PER_PAGE
-        total_pages = max(1, -(-len(self.current_data) // items_per_page))
+        total_pages = max(1, -(-len(self.filtered_data) // ITEMS_PER_PAGE))
         if self.current_page >= total_pages:
             self.current_page = total_pages - 1
 
         self._render_page()
 
     def  _pagination_controls(self, total_items):
-        items_per_pages = 5 if self.mode == "available" else ITEMS_PER_PAGE
-        total_pages = max(1, -(-total_items // items_per_pages))
+        total_pages = max(1, -(-total_items // ITEMS_PER_PAGE))
 
         if total_pages <= 1:
             return
