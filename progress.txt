@@ -255,3 +255,23 @@ FIXED
 - Incorrect page count in _refresh_after_action when a search is active
 - TclError in Manage Users header caused by mixing pack and grid
 - Ban/unban success message showing twice, and appearing before the actual update
+
+Oct 5, 2026 (Monday)
+ADDED
+- Show Password checkbox in Change Password
+- Profile: avatar, account status badge, username change cooldown hint, Overdue and Total Borrowed stats, Recent Activity
+- Profile: clickable stats that open the matching tab in My Reservation
+- User Dashboard: clickable avatar (initial of username) in the top bar that opens Profile
+- Manage Users: avatar (initial of username) on each user card
+
+CHANGED
+- Change Password: Save and Cancel buttons now at the bottom, below the new password fields
+- Profile: Profile Info rows use grid for alignment
+- Profile: My Stats now shows user-specific numbers (replaced Available and Total Equipment)
+
+FIXED
+- Cursor focus landing on a hidden field when opening Change Password
+- No error message when the username change fails
+- Due Soon stat in Profile always showing 0 (it was counting into Overdue)
+- Role row in Profile missing the Active/Banned status badge
+- "View all" button in Recent Activity unreadable (no text color)

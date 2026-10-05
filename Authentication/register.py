@@ -61,6 +61,7 @@ class RegisterWindow:
         self.username_label.pack(pady=(30, 0))
         self.username_entry = tk.Entry(self.username_panel, font=("Arial", 18), width=35, **self.colors)
         self.username_entry.pack(pady=(10, 0))
+        self.username_entry.bind("<Control-BackSpace>", lambda e: (self.username_entry.delete(0, tk.END), "break")[1])
 
     def _password_frame(self):
         self.password_panel = tk.Frame(self.register_window, bg=self.primary_bg)
@@ -70,6 +71,7 @@ class RegisterWindow:
         self.password_label.pack(pady=(10, 0))
         self.password_entry = tk.Entry(self.password_panel, font=("Arial", 18), width=35, **self.colors, show="•")
         self.password_entry.pack(pady=(10,0))
+        self.password_entry.bind("<Control-BackSpace>", lambda e: (self.password_entry.delete(0, tk.END), "break")[1])
         self.show_pass = tk.BooleanVar(value=False)
         self.show_pass_checkbox = tk.show_pass_checkbox = (
             tk.Checkbutton(self.password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor="#0F172A", cursor="hand2", variable= self.show_pass, command = lambda: self.toggle_password(self.password_entry, self.show_pass))
@@ -84,6 +86,7 @@ class RegisterWindow:
         self.confirm_password_label.pack(pady=(10, 0))
         self.confirm_password_entry = tk.Entry(self.confirm_password_panel,font=("Arial", 18), width=35, **self.colors, show="•")
         self.confirm_password_entry.pack(pady=(10, 0))
+        self.confirm_password_entry.bind("<Control-BackSpace>", lambda e: (self.confirm_password_entry.delete(0, tk.END), "break")[1])
         self.show_confirm_pass = tk.BooleanVar(value=False)
         self.show_confirm_pass_checkbox = tk.show_confirm_pass_checkbox = (
             tk.Checkbutton(self.confirm_password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor="#0F172A", activeforeground="white", cursor="hand2", variable=self.show_confirm_pass, command = lambda: self.toggle_password(self.confirm_password_entry, self.show_confirm_pass))

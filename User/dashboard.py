@@ -91,8 +91,21 @@ class UserDashboard:
 
         self.dashboard_app_name = tk.Label(self.top_panel, text=f"{self.app_name}", font=("Arial", 24), bg=self.primary_bg, fg=self.primary_fg)
         self.dashboard_app_name.pack(side="left", padx=(20,0))
+
+        self.user_avatar = tk.Canvas(self.top_panel, width=44, height=44, bg=self.primary_bg, highlightthickness=0, cursor="hand2")
+        self.user_avatar.pack(side="right", padx=(0, 20))
+
         self.user_username = tk.Label(self.top_panel, text=f"{self.user['username']}", font=("Arial", 16, "underline"), bg=self.primary_bg, fg=self.primary_fg, cursor="hand2")
-        self.user_username.pack(side="right", padx=(0,20))
+        self.user_username.pack(side="right", padx=(0, 10))
+
+        self._draw_avatar()
+
+    def _draw_avatar(self):
+        size = 44
+        self.user_avatar.delete("all")
+        self.user_avatar.create_oval(2, 2, size - 2, size - 2, fill="#4ADE80", outline="")
+        initial = (self.user.get("username") or "?").strip()[:2].upper() or "?"
+        self.user_avatar.create_text(size // 2, size // 2, text=initial, font=("Arial", 18, "bold"), fill="#0F172A")
 
     def _parent_frame(self):
         self.main_panel = tk.Frame(self.user_window, bg=self.primary_bg)
@@ -129,6 +142,7 @@ class UserDashboard:
         self.reservation_btn.bind("<Button-1>", self._on_nav_click)
         self.notification_btn.bind("<Button-1>", self._on_nav_click)
         self.profile_btn.bind("<Button-1>", self._on_nav_click)
+        self.user_avatar.bind("<Button-1>", lambda e: self._show_profile_page())
         self.user_username.bind("<Button-1>", lambda e: self._show_profile_page())
 
     def _button_style(self):
@@ -239,10 +253,10 @@ class UserDashboard:
         self._clear_right_panel()
         BrowseEquipmentPage(self.right_panel, self.colors, self.user["id"])
 
-    def _show_reservation_page(self):
+    def _show_reservation_page(self, tab=None):
         self.user_window.title(f"{self.w_reservation_title} - {self.app_name}")
         self._clear_right_panel()
-        ReservationPage(self.right_panel, self.colors, self.user)
+        ReservationPage(self.right_panel, self.colors, self.user, initial_tab=tab or "pending")
 
     def _show_notification_page(self):
         self.user_window.title(f"{self.w_notification_title} - {self.app_name}")
@@ -259,11 +273,12 @@ class UserDashboard:
             self._loops_btn()
             self.profile_btn.pack(padx=(80, 0))
 
-        ProfilePage(self.right_panel, self.colors, self.user, self._on_username_updated)
+        ProfilePage(self.right_panel, self.colors, self.user, self._on_username_updated, self._go_to_reservation)
 
     def _on_username_updated(self, new_username):
         self.user["username"] = new_username
         self.user_username.config(text=new_username)
+        self._draw_avatar()
 
     def _update_nav_labels(self, minimized):
         index = 1 if minimized else 0
@@ -366,3 +381,8 @@ class UserDashboard:
 
         from Authentication.login import LoginWindow
         LoginWindow()
+
+    def _go_to_reservation(self, tab="pending"):
+        self.active_btn = self.reservation_btn
+        self._highlight_active_button()
+        self._show_reservation_page(tab)

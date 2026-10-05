@@ -157,6 +157,14 @@ class ManageUsersPage:
 
         self._pagination_controls(total_pages)
 
+    @staticmethod
+    def _avatar(parent, name, bg, banned, size=50):
+        canvas = tk.Canvas(parent, width=size, height=size, bg=bg, highlightthickness=0)
+        canvas.create_oval(2, 2, size - 2, size - 2, fill="#64748B" if banned else "#4ADE80", outline="")
+        initial = (name or "?").strip()[:1].upper() or "?"
+        canvas.create_text(size // 2, size // 2, text=initial, font=("Arial", 20, "bold"), fill="#0F172A")
+        return canvas
+
     def _create_user_card(self, parent, user, row, col):
         banned = user.get("is_banned")
         bg = "#3B2A33" if banned else "#334155"
@@ -165,12 +173,18 @@ class ManageUsersPage:
         card.grid(row=row, column=col, padx=8, pady=8, sticky="nsew")
         card.grid_propagate(False)
 
+        card.grid_columnconfigure(1, weight=1)
+        card.grid_rowconfigure(0, weight=1)
+        card.grid_rowconfigure(1, weight=1)
+
+        self._avatar(card, user["username"], bg, banned).grid(row=0, column=0, rowspan=2, padx=(15, 12))
+
+        tk.Label(card, text=user["username"], font=("Arial", 15, "bold"), bg=bg, fg=self.primary_fg, anchor="w", justify="left", wraplength=180).grid(row=0, column=1, sticky="sw", padx=(0, 8))
+        tk.Label(card, text="• Banned" if banned else "• Active", font=("Arial", 11), bg=bg, fg="#F87171" if banned else "#4ADE80", anchor="w").grid(row=1, column=1, sticky="nw")
+
         option_btn = tk.Label(card, text="⋮", font=("Arial", 18, "bold"), bg=bg, fg=self.primary_fg, cursor="hand2")
         option_btn.place(relx=1.0, x=-10, y=5, anchor="ne")
         option_btn.bind("<Button-1>", lambda e, u=user: self._show_user_menu(e, u))
-
-        tk.Label(card, text=user["username"], font=("Arial", 15, "bold"), bg=bg, fg=self.primary_fg, wraplength=170).pack(pady=(30, 5))
-        tk.Label(card, text="● Banned" if banned else "● Active", font=("Arial", 11), bg=bg, fg="#F87171" if banned else "#4ADE80").pack(pady=(0, 5))
 
     def _show_user_menu(self, event, user):
         menu = tk.Menu(self.content_frame, tearoff=0, bg="#334155", fg=self.primary_fg, activebackground=self.primary_bg, activeforeground=self.primary_fg)

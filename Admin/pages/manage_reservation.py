@@ -45,7 +45,7 @@ class ManageReservationPage:
         ("calendar", "Calendar", "No Reservation.")
     ]
 
-    SEARCHABLE = {"request", "available", "borrowed"}
+    SEARCHABLE = {"request", "return", "available", "borrowed"}
 
     def __init__(self, parent, colors, initial_tab="request"):
         self.parent = parent
