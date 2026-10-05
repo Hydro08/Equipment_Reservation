@@ -23,6 +23,10 @@ class BrowseEquipmentPage:
         self._build_ui()
 
     def _build_ui(self):
+        self.search_query = ""
+        self.search_page = 0
+        self._suppress_search = False
+
         self.main_frame = tk.Frame(self.parent, bg=self.primary_bg)
         self.main_frame.pack(fill="both", expand=True)
 
@@ -30,62 +34,51 @@ class BrowseEquipmentPage:
         self.header.pack(fill="x", padx=20, pady=(20, 10))
         self.header.grid_columnconfigure(0, weight=1)
 
-        self.title_label = tk.Label(self.header, text="Browse Equipment", font=("Arial", 24, "bold"), anchor="center", **self.colors)
+        self.title_label = tk.Label(self.header, text="Browse Equipment", font=("Arial", 18, "bold"), anchor="center", **self.colors)
         self.title_label.grid(row=0, column=0, sticky="ew")
 
+        self.search_var = tk.StringVar()
         self.search_area = tk.Frame(self.header, bg=self.primary_bg)
         self.search_area.grid(row=0, column=1, sticky="e")
 
-        self.search_toggle_btn = tk.Button(self.search_area, text="🔍", font=("Arial", 14), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=10, pady=2, command=self._open_search)
-        self.search_toggle_btn.pack()
+        tk.Label(self.search_area, text="🔍", font=("Arial", 14), bg=self.primary_bg, fg="#FFFFFF").pack(side="left", padx=(0, 8))
+
+        self.search_entry = tk.Entry(self.search_area, textvariable=self.search_var, width=28, font=("Arial", 12),bg="#334155", fg="#FFFFFF", insertbackground="#FFFFFF", relief="flat")
+        self.search_entry.pack(side="left", ipady=4)
+        self.search_entry.bind("<Control-BackSpace>", lambda e: (self.clear_search_entry(), "break")[1])
+
+        tk.Button(self.search_area, text="X", font=("Arial", 11, "bold"), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=10, pady=4, command=lambda: self.search_var.set("")).pack(side="left", padx=(6, 0))
+
+        self.search_var.trace_add("write", self._on_search_typed)
 
         self.loading_label = tk.Label(self.main_frame, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
 
         threading.Thread(target=self._fetch_equipment_data, daemon=True).start()
 
-    def _open_search(self):
-        if not hasattr(self, "all_equipment"):
-            return
-
-        self.search_toggle_btn.pack_forget()
-        self.title_label.config(text="Browse Equipment - Search", anchor="w")
-
-        self.search_var = tk.StringVar()
-        self.search_entry = tk.Entry(self.search_area, textvariable=self.search_var, width=25, font=("Arial", 12), bg="#334155", fg="#FFFFFF", insertbackground="#FFFFFF", relief="flat")
-        self.search_entry.pack(side="left", ipady=4, padx=(0, 8))
-        self.search_entry.bind("<Return>", lambda e: self._run_search())
-        self.search_entry.focus_set()
-        self.search_entry.bind("<Control-BackSpace>", lambda e: self.clear_search_entry())
-
-        self.search_btn = tk.Button(self.search_area, text="Search", font=("Arial", 12, "bold"), bg="#4AD380", fg="#0F172A", cursor="hand2", bd=0, padx=12, pady=4, command=self._run_search)
-        self.search_btn.pack(side="left", padx=(0, 8))
-
-        self.close_search_btn = tk.Button(self.search_area, text="X", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=10, pady=4, command=self._close_search)
-        self.close_search_btn.pack(side="left")
-
-    def _reset_search_ui(self):
-        for widget in self.search_area.winfo_children():
-            widget.destroy()
-
-        self.search_toggle_btn = tk.Button(self.search_area, text="🔍", font=("Arial", 14), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=10, pady=2, command=self._open_search)
-        self.search_toggle_btn.pack()
-        self.title_label.config(anchor="center")
+    def _clear_search_silently(self):
+        self._suppress_search = True
+        self.search_var.set("")
+        self._suppress_search = False
         self.search_query = ""
 
-    def _close_search(self):
-        self._reset_search_ui()
-        if getattr(self, "current_view", "") == "search":
-            self._show_departments()
-
     def _back_from_search(self):
-        self._reset_search_ui()
-        self._show_departments()
+        self._clear_search_silently()
+        self._show_departments(refresh=False)
 
-    def _run_search(self):
+    def _on_search_typed(self, *_):
+        if self._suppress_search:
+            return
+
+        if not hasattr(self, "content_frame") or not self.content_frame.winfo_exists():
+            return
+
         query = self.search_var.get().strip()
+
         if not query:
-            self._show_departments()
+            self.search_query = ""
+            if getattr(self, "current_view", "") == "search":
+                self._show_departments(refresh=False)
             return
 
         self.search_query = query
@@ -194,7 +187,7 @@ class BrowseEquipmentPage:
         self.current_dept_items = dept_items
         self.department_categories = [c for c in self.all_categories if c["department_id"] == dept["id"]]
         self.current_category_page = 0
-        self._reset_search_ui()
+        self._clear_search_silently()
         self._show_equipment_by_category(category["name"], [i for i in dept_items if i.get("category_id") == category["id"]])
 
     def _fetch_equipment_data(self):
@@ -216,6 +209,9 @@ class BrowseEquipmentPage:
         self._show_departments()
         self._start_polling()
 
+        if self.search_var.get().strip():
+            self._on_search_typed()
+
     def _clear_content(self):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
@@ -227,10 +223,14 @@ class BrowseEquipmentPage:
             row_frame.grid_columnconfigure(col, weight=1)
         return row_frame
 
-    def _show_departments(self):
+    def _show_departments(self, refresh=True):
         self.current_view = "departments"
         self._clear_content()
         self.title_label.config(text="Browse Equipment")
+
+        if refresh:
+            self.all_equipment = get_all_equipment()
+        self._last_signature = self._current_signature()
 
         self.all_equipment = get_all_equipment()
         self._last_signature = self._current_signature()
@@ -382,6 +382,7 @@ class BrowseEquipmentPage:
             widget.bind("<Button-1>", lambda e, cat=category, its=items: self._show_equipment_by_category(cat, its))
 
     def _open_department(self, department, items):
+        self._clear_search_silently()
         dept = next((d for d in self.all_departments if d["name"] == department), None)
         self.current_department_id = dept["id"] if dept else None
         self.current_category_page = 0
