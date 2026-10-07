@@ -8,21 +8,17 @@ from User.dashboard import UserDashboard
 
 from Authentication.auth_service import login_user, get_user_by_id
 from Database.session_manager import save_session, load_session, clear_session
-
+from Config.colors import PRIMARY_BG, PRIMARY_FG, DARK_FG, DARK_BLUE_BG
+from Config.settings import APP_NAME
+from Config.layout import WINDOW_WIDTH, WINDOW_HEIGHT
 
 class LoginWindow:
-    app_name = "Equipment Reservation"
-    window_width = 850
-    window_height = 600
-    primary_bg = "#0F172A"
-    primary_fg = "#FFFFFF"
-    hover_bg = "dark gray"
     banned_notice = False
 
     def __init__(self):
         self.login_window = tk.Tk()
-        self.login_window.title(f"{self.app_name} - Login")
-        self.login_window.config(bg="#0F172A")
+        self.login_window.title(f"{APP_NAME} - Login")
+        self.login_window.config(bg=DARK_BLUE_BG)
         self.login_window.resizable(False, False)
 
         saved_user_id = load_session()
@@ -52,11 +48,12 @@ class LoginWindow:
 
         self.login_window.mainloop()
 
-    def fg_bg(self):
-        return {"bg": self.primary_bg, "fg": self.primary_fg}
+    @staticmethod
+    def fg_bg():
+        return {"bg": DARK_BLUE_BG, "fg": PRIMARY_FG}
 
     def _build_ui(self):
-        self.login_text = tk.Label(self.login_window, text=f"{self.app_name}", font=("Arial", 24), **self.colors)
+        self.login_text = tk.Label(self.login_window, text=f"{APP_NAME}", font=("Arial", 24), **self.colors)
         self.login_text.pack(pady=(20, 0))
         self.welcome_label = tk.Label(self.login_window, text="Welcome back!", font=("Arial", 18), **self.colors)
         self.welcome_label.pack(pady=(20, 0))
@@ -77,19 +74,19 @@ class LoginWindow:
     def _build_remember_me(self):
         self.remember_me_var = tk.BooleanVar(value=False)
         self.remember_me_checkbox = tk.Checkbutton(
-            self.login_window, text="Remember Me", font=("Arial", 12), variable=self.remember_me_var, selectcolor="#0F172A", bg=self.primary_bg, fg=self.primary_fg, cursor="hand2"
+            self.login_window, text="Remember Me", font=("Arial", 12), variable=self.remember_me_var, selectcolor=DARK_FG, bg=DARK_BLUE_BG, fg=PRIMARY_FG, cursor="hand2"
         )
         self.remember_me_checkbox.pack(pady=(20, 0))
 
     def _center_window(self):
         screen_width = self.login_window.winfo_screenwidth()
         screen_height = self.login_window.winfo_screenheight()
-        x = (screen_width - self.window_width) // 2
-        y = (screen_height - self.window_height) // 2
-        self.login_window.geometry(f"{self.window_width}x{self.window_height}+{x}+{y}")
+        x = (screen_width - WINDOW_WIDTH) // 2
+        y = (screen_height - WINDOW_HEIGHT) // 2
+        self.login_window.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{x}+{y}")
 
     def _username_frame(self):
-        self.username_panel = tk.Frame(self.login_window, bg=self.primary_bg)
+        self.username_panel = tk.Frame(self.login_window, bg=DARK_BLUE_BG)
         self.username_panel.pack(pady=(0, 10))
 
         self.username_text = tk.Label(self.username_panel, text="Username", font=("Arial", 24), **self.colors)
@@ -100,19 +97,18 @@ class LoginWindow:
         self.username_entry.bind("<Control-BackSpace>", lambda event: self.clear_entry(event))
 
     def _password_frame(self):
-        self.password_panel = tk.Frame(self.login_window, bg=self.primary_bg)
+        self.password_panel = tk.Frame(self.login_window, bg=DARK_BLUE_BG)
         self.password_panel.pack(pady=(20, 0))
 
         self.password_text = tk.Label(self.password_panel, text="Password", font=("Arial", 24), **self.colors)
         self.password_text.pack(pady=(20, 0))
-        self.password_entry = tk.Entry(self.password_panel, font=("Arial", 20), show="•", width=35, borderwidth=3,
-                                       **self.colors)
+        self.password_entry = tk.Entry(self.password_panel, font=("Arial", 20), show="•", width=35, borderwidth=3, **self.colors)
         self.password_entry.pack(padx=(0, 10))
         self.password_entry.bind("<Control-BackSpace>", lambda event: self.clear_entry(event))
 
         self.show_pass = tk.BooleanVar(value=False)
         self.show_pass_checkbox = (
-            tk.Checkbutton(self.password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor="#0F172A", activeforeground="white", cursor="hand2", variable=self.show_pass, command=lambda: self._toggle_password())
+            tk.Checkbutton(self.password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor=DARK_FG, activeforeground="white", cursor="hand2", variable=self.show_pass, command=lambda: self._toggle_password())
         )
         self.show_pass_checkbox.pack(pady=(20, 0), side="left")
 

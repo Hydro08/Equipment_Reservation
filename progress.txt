@@ -275,3 +275,20 @@ FIXED
 - Due Soon stat in Profile always showing 0 (it was counting into Overdue)
 - Role row in Profile missing the Active/Banned status badge
 - "View all" button in Recent Activity unreadable (no text color)
+
+Oct 6, 2026 (Tuesday)
+-Busy
+
+Oct 7, 2026 (Wednesday)
+ADDED
+- Config directory to manage colors, layout, and settings
+  - colors.py: color constants (PRIMARY_BG, SECONDARY_BG, STATUS_*, etc.)
+  - layout.py: window sizes, button styles, columns, padding
+  - settings.py: APP_NAME, DUE_SOON_DAYS, PERIODS, NAV_LABELS, window titles
+
+CHANGED
+- All files now import constants from Config instead of hardcoded values
+
+FIXED
+- Missing bg= in user_window.config(PRIMARY_BG) (dashboard.py)
+- Typo "Browser Equipment" → "Browse Equipment"

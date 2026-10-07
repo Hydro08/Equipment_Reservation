@@ -3,14 +3,11 @@ import threading
 from datetime import date, timedelta
 
 from Authentication.auth_service import get_all_equipment, get_all_departments, get_all_categories, create_reservation
+from Config.colors import PRIMARY_BG, PRIMARY_FG, SECONDARY_BG
+from Config.layout import GRID_ITEMS_PER_PAGE, POLL_INTERVAL_MS
 from tkinter import messagebox
 
-GRID_ITEMS_PER_PAGE = 9
-POLL_INTERVAL_MS = 5000
-
 class BrowseEquipmentPage:
-
-    primary_bg = "#1E293B"
 
     def __init__(self, parent, colors, user_id):
         self.parent = parent
@@ -27,10 +24,10 @@ class BrowseEquipmentPage:
         self.search_page = 0
         self._suppress_search = False
 
-        self.main_frame = tk.Frame(self.parent, bg=self.primary_bg)
+        self.main_frame = tk.Frame(self.parent, bg=PRIMARY_BG)
         self.main_frame.pack(fill="both", expand=True)
 
-        self.header = tk.Frame(self.main_frame, bg=self.primary_bg)
+        self.header = tk.Frame(self.main_frame, bg=PRIMARY_BG)
         self.header.pack(fill="x", padx=20, pady=(20, 10))
         self.header.grid_columnconfigure(0, weight=1)
 
@@ -38,16 +35,16 @@ class BrowseEquipmentPage:
         self.title_label.grid(row=0, column=0, sticky="ew")
 
         self.search_var = tk.StringVar()
-        self.search_area = tk.Frame(self.header, bg=self.primary_bg)
+        self.search_area = tk.Frame(self.header, bg=PRIMARY_BG)
         self.search_area.grid(row=0, column=1, sticky="e")
 
-        tk.Label(self.search_area, text="🔍", font=("Arial", 14), bg=self.primary_bg, fg="#FFFFFF").pack(side="left", padx=(0, 8))
+        tk.Label(self.search_area, text="🔍", font=("Arial", 14), bg=PRIMARY_BG, fg=PRIMARY_FG).pack(side="left", padx=(0, 8))
 
-        self.search_entry = tk.Entry(self.search_area, textvariable=self.search_var, width=28, font=("Arial", 12),bg="#334155", fg="#FFFFFF", insertbackground="#FFFFFF", relief="flat")
+        self.search_entry = tk.Entry(self.search_area, textvariable=self.search_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat")
         self.search_entry.pack(side="left", ipady=4)
         self.search_entry.bind("<Control-BackSpace>", lambda e: (self.clear_search_entry(), "break")[1])
 
-        tk.Button(self.search_area, text="X", font=("Arial", 11, "bold"), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=10, pady=4, command=lambda: self.search_var.set("")).pack(side="left", padx=(6, 0))
+        tk.Button(self.search_area, text="X", font=("Arial", 11, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=10, pady=4, command=lambda: self.search_var.set("")).pack(side="left", padx=(6, 0))
 
         self.search_var.trace_add("write", self._on_search_typed)
 
@@ -93,7 +90,7 @@ class BrowseEquipmentPage:
         self._clear_content()
         self.title_label.config(text="Browse Equipment - Search")
 
-        back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=self._back_from_search)
+        back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg=PRIMARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, command=self._back_from_search)
         back_btn.pack(anchor="w", padx=0, pady=(10, 15))
 
         q = self.search_query.lower()
@@ -145,12 +142,12 @@ class BrowseEquipmentPage:
         if total_pages <= 1:
             return
 
-        nav_frame = tk.Frame(self.content_frame, bg=self.primary_bg)
+        nav_frame = tk.Frame(self.content_frame, bg=PRIMARY_BG)
         nav_frame.pack(pady=(20, 10))
 
-        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.search_page > 0 else "disabled", command=self._go_previous_search_page).pack(side="left", padx=5)
-        tk.Label(nav_frame, text=f"Page {self.search_page + 1} of {total_pages}", font=("Arial", 12), bg=self.primary_bg, fg="#94A3B8").pack(side="left", padx=15)
-        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.search_page < total_pages - 1 else "disabled", command=self._go_next_search_page).pack(side="left", padx=5)
+        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.search_page > 0 else "disabled", command=self._go_previous_search_page).pack(side="left", padx=5)
+        tk.Label(nav_frame, text=f"Page {self.search_page + 1} of {total_pages}", font=("Arial", 12), bg=PRIMARY_BG, fg="#94A3B8").pack(side="left", padx=15)
+        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.search_page < total_pages - 1 else "disabled", command=self._go_next_search_page).pack(side="left", padx=5)
 
     def _go_next_search_page(self):
         self.search_page += 1
@@ -161,18 +158,18 @@ class BrowseEquipmentPage:
         self._render_search_results()
 
     def _create_search_category_card(self, parent, category, dept, items, row, col):
-        card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
+        card = tk.Frame(parent, bg=SECONDARY_BG, cursor="hand2", height=180)
         card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         card.grid_propagate(False)
 
         dept_name = dept["name"] if dept else "N/A"
-        dept_label = tk.Label(card, text=dept_name, font=("Arial", 10), bg="#334155", fg="#94A3B8")
+        dept_label = tk.Label(card, text=dept_name, font=("Arial", 10), bg=SECONDARY_BG, fg="#94A3B8")
         dept_label.pack(pady=(10, 0))
 
-        name_label = tk.Label(card, text=category["name"], font=("Arial", 18, "bold"), bg="#334155", fg="#FFFFFF")
+        name_label = tk.Label(card, text=category["name"], font=("Arial", 18, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG)
         name_label.pack(pady=(15, 20))
 
-        count_label = tk.Label(card, text=f"{len(items)} item(s)", font=("Arial", 12), bg="#334155", fg="#94A3B8")
+        count_label = tk.Label(card, text=f"{len(items)} item(s)", font=("Arial", 12), bg=SECONDARY_BG, fg="#94A3B8")
         count_label.pack(pady=(0, 10))
 
         for widget in (card, dept_label, name_label, count_label):
@@ -203,7 +200,7 @@ class BrowseEquipmentPage:
         self.all_departments = get_all_departments()
         self.all_categories = get_all_categories()
 
-        self.content_frame = tk.Frame(self.main_frame, bg=self.primary_bg)
+        self.content_frame = tk.Frame(self.main_frame, bg=PRIMARY_BG)
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         self._show_departments()
@@ -216,8 +213,9 @@ class BrowseEquipmentPage:
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-    def _generic_grid(self, parent):
-        row_frame = tk.Frame(parent, bg=self.primary_bg)
+    @staticmethod
+    def _generic_grid(parent):
+        row_frame = tk.Frame(parent, bg=PRIMARY_BG)
         row_frame.pack(fill="x", padx=10, pady=10)
         for col in range(3):
             row_frame.grid_columnconfigure(col, weight=1)
@@ -272,14 +270,14 @@ class BrowseEquipmentPage:
         if total_pages <= 1:
             return
 
-        nav_frame = tk.Frame(self.content_frame, bg=self.primary_bg)
+        nav_frame = tk.Frame(self.content_frame, bg=PRIMARY_BG)
         nav_frame.pack(pady=(20, 10))
 
-        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_department_page > 0 else "disabled",command=self._go_previous_department_page).pack(side="left", padx=5)
+        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_department_page > 0 else "disabled",command=self._go_previous_department_page).pack(side="left", padx=5)
 
-        tk.Label(nav_frame, text=f"Page {self.current_department_page + 1} of {total_pages}", font=("Arial", 12), bg=self.primary_bg, fg="#94A3B8").pack(side="left", padx=15)
+        tk.Label(nav_frame, text=f"Page {self.current_department_page + 1} of {total_pages}", font=("Arial", 12), bg=PRIMARY_BG, fg="#94A3B8").pack(side="left", padx=15)
 
-        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_department_page < total_pages - 1 else "disabled",command=self._go_next_department_page).pack(side="left", padx=5)
+        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_department_page < total_pages - 1 else "disabled",command=self._go_next_department_page).pack(side="left", padx=5)
 
     def _go_next_department_page(self):
         self.current_department_page += 1
@@ -290,14 +288,14 @@ class BrowseEquipmentPage:
         self._show_departments()
 
     def _create_department_card(self, parent, department, items, row, col):
-        card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
+        card = tk.Frame(parent, bg=SECONDARY_BG, cursor="hand2", height=180)
         card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         card.grid_propagate(False)
 
-        name_label = tk.Label(card, text=department, font=("Arial", 18, "bold"), bg="#334155", fg="#FFFFFF")
+        name_label = tk.Label(card, text=department, font=("Arial", 18, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG)
         name_label.pack(pady=(30, 30))
 
-        count_label = tk.Label(card, text=f"{len(items)} item(s)", font=("Arial", 12), bg="#334155", fg="#94A3B8")
+        count_label = tk.Label(card, text=f"{len(items)} item(s)", font=("Arial", 12), bg=SECONDARY_BG, fg="#94A3B8")
         count_label.pack(pady=(0, 10))
 
         for widget in (card, name_label, count_label):
@@ -310,7 +308,7 @@ class BrowseEquipmentPage:
         self._clear_content()
         self.title_label.config(text=f"Browse Equipment - {department}")
 
-        back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=self._show_departments)
+        back_btn = tk.Button(self.content_frame, text="< Back to Departments", font=("Arial", 12), bg="#1E293B", fg=PRIMARY_FG, cursor="hand2", bd=0, command=self._show_departments)
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
 
         if not self.department_categories:
@@ -350,14 +348,14 @@ class BrowseEquipmentPage:
         if total_pages <= 1:
             return
 
-        nav_frame = tk.Frame(self.content_frame, bg=self.primary_bg)
+        nav_frame = tk.Frame(self.content_frame, bg=PRIMARY_BG)
         nav_frame.pack(pady=(20, 10))
 
-        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5,state="normal" if self.current_category_page > 0 else "disabled",command=self._go_previous_category_page).pack(side="left", padx=5)
+        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5,state="normal" if self.current_category_page > 0 else "disabled",command=self._go_previous_category_page).pack(side="left", padx=5)
 
-        tk.Label(nav_frame, text=f"Page {self.current_category_page + 1} of {total_pages}", font=("Arial", 12), bg=self.primary_bg, fg="#94A3B8").pack(side="left", padx=15)
+        tk.Label(nav_frame, text=f"Page {self.current_category_page + 1} of {total_pages}", font=("Arial", 12), bg=PRIMARY_BG, fg="#94A3B8").pack(side="left", padx=15)
 
-        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_category_page < total_pages - 1 else "disabled",command=self._go_next_category_page).pack(side="left", padx=5)
+        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_category_page < total_pages - 1 else "disabled",command=self._go_next_category_page).pack(side="left", padx=5)
 
     def _go_next_category_page(self):
         self.current_category_page += 1
@@ -368,14 +366,14 @@ class BrowseEquipmentPage:
         self._show_categories(self.current_department, self.current_dept_items)
 
     def _create_category_card(self, parent, category, items, row, col):
-        card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
+        card = tk.Frame(parent, bg=SECONDARY_BG, cursor="hand2", height=180)
         card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         card.grid_propagate(False)
 
-        name_label = tk.Label(card, text=category, font=("Arial", 18, "bold"), bg="#334155", fg="#FFFFFF")
+        name_label = tk.Label(card, text=category, font=("Arial", 18, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG)
         name_label.pack(pady=(30, 30))
 
-        count_label = tk.Label(card, text=f"{len(items)} item(s)", font=("Arial", 12), bg="#334155", fg="#94A3B8")
+        count_label = tk.Label(card, text=f"{len(items)} item(s)", font=("Arial", 12), bg=SECONDARY_BG, fg="#94A3B8")
         count_label.pack(pady=(0, 10))
 
         for widget in (card, name_label, count_label):
@@ -401,7 +399,7 @@ class BrowseEquipmentPage:
         self._render_category_page()
 
     def _create_equipment_card(self, parent, item, row, col, show_location=False):
-        self.card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
+        self.card = tk.Frame(parent, bg=SECONDARY_BG, cursor="hand2", height=180)
         self.card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         self.card.grid_propagate(False)
 
@@ -414,34 +412,34 @@ class BrowseEquipmentPage:
             dept_name = (item.get("departments") or {}).get("name", "N/A")
             cat_name = (item.get("categories") or {}).get("name", "N/A")
 
-            location_label = tk.Label(self.card, text=f"{dept_name} > {cat_name}", font=("Arial", 10), bg="#334155",
+            location_label = tk.Label(self.card, text=f"{dept_name} > {cat_name}", font=("Arial", 10), bg=SECONDARY_BG,
                                       fg="#94A3B8")
             location_label.pack(pady=(12, 0))
 
-            name_label = tk.Label(self.card, text=item["name"], font=("Arial", 16, "bold"), bg="#334155", fg="#FFFFFF")
+            name_label = tk.Label(self.card, text=item["name"], font=("Arial", 16, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG)
             name_label.pack(pady=(15, 15))
 
-            info_row = tk.Frame(self.card, bg="#334155")
+            info_row = tk.Frame(self.card, bg=SECONDARY_BG)
             info_row.pack()
 
-            status_label = tk.Label(info_row, text=item["status"], font=("Arial", 13, "bold"), bg="#334155", fg=status_color)
+            status_label = tk.Label(info_row, text=item["status"], font=("Arial", 13, "bold"), bg=SECONDARY_BG, fg=status_color)
             status_label.pack(side="left", pady=5)
 
-            separator = tk.Label(info_row, text=" | ", font=("Arial", 13), bg="#334155", fg="#94A3B8")
+            separator = tk.Label(info_row, text=" | ", font=("Arial", 13), bg=SECONDARY_BG, fg="#94A3B8")
             separator.pack(side="left", pady=5)
 
-            condition_label = tk.Label(info_row, text=condition, font=("Arial", 13), bg="#334155", fg=condition_color)
+            condition_label = tk.Label(info_row, text=condition, font=("Arial", 13), bg=SECONDARY_BG, fg=condition_color)
             condition_label.pack(side="left", pady=5)
 
             widgets.extend([location_label, name_label, info_row, status_label, separator, condition_label])
         else:
-            name_label = tk.Label(self.card, text=item["name"], font=("Arial", 18, "bold"), bg="#334155", fg="#FFFFFF")
+            name_label = tk.Label(self.card, text=item["name"], font=("Arial", 18, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG)
             name_label.pack(pady=(30, 30))
 
-            status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg="#334155", fg=status_color)
+            status_label = tk.Label(self.card, text=item["status"], font=("Arial", 14, "bold"), bg=SECONDARY_BG, fg=status_color)
             status_label.pack(pady=(0, 10))
 
-            condition_label = tk.Label(self.card, text=f"Condition: {condition}", font=("Arial", 14), bg="#334155",fg=condition_color)
+            condition_label = tk.Label(self.card, text=f"Condition: {condition}", font=("Arial", 14), bg=SECONDARY_BG,fg=condition_color)
             condition_label.pack(pady=(0, 5))
 
             widgets.extend([name_label, status_label, condition_label])
@@ -465,7 +463,7 @@ class BrowseEquipmentPage:
         self._clear_content()
         self.title_label.config(text=f"Browse Equipment - {self.current_department} - {self.current_category}")
 
-        back_btn = tk.Button(self.content_frame, text="< Back to Categories", font=("Arial", 12), bg="#1E293B", fg="#FFFFFF", cursor="hand2", bd=0, command=lambda: self._show_categories(self.current_department, self.current_dept_items))
+        back_btn = tk.Button(self.content_frame, text="< Back to Categories", font=("Arial", 12), bg="#1E293B", fg=PRIMARY_FG, cursor="hand2", bd=0, command=lambda: self._show_categories(self.current_department, self.current_dept_items))
         back_btn.pack(anchor="w", padx=10, pady=(10, 15))
 
         if not self.current_items:
@@ -501,14 +499,14 @@ class BrowseEquipmentPage:
         nav_frame = tk.Frame(self.content_frame, bg="#1E293B")
         nav_frame.pack(pady=(20, 10))
 
-        prev_btn = tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page > 0 else "disabled",command=self._go_previous_page)
+        prev_btn = tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page > 0 else "disabled",command=self._go_previous_page)
         prev_btn.pack(side="left", padx=5)
 
         page_label = tk.Label(nav_frame, text=f"Page {self.current_page + 1} of {total_pages}",
                                font=("Arial", 12), bg="#1E293B", fg="#94A3B8")
         page_label.pack(side="left", padx=15)
 
-        next_btn = tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page < total_pages - 1 else "disabled", command=self._go_next_page)
+        next_btn = tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page < total_pages - 1 else "disabled", command=self._go_next_page)
         next_btn.pack(side="left", padx=5)
 
     def _go_next_page(self):
@@ -523,31 +521,31 @@ class BrowseEquipmentPage:
         self.details_overlay = tk.Frame(self.parent, bg="#1E293B")
         self.details_overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-        self.modal = tk.Frame(self.details_overlay, bg="#334155", width=450, height=300)
+        self.modal = tk.Frame(self.details_overlay, bg=SECONDARY_BG, width=450, height=300)
         self.modal.place(relx=0.5, rely=0.5, anchor="center")
         self.modal.pack_propagate(False)
 
-        self.cancel_area = tk.Frame(self.modal, bg="#334155")
+        self.cancel_area = tk.Frame(self.modal, bg=SECONDARY_BG)
         self.cancel_area.pack(fill="x", pady=10)
 
-        self.close_btn = tk.Button(self.cancel_area, text="X", font=("Arial", 12), bg="#F93111", fg="#FFFFFF", cursor="hand2", bd=0, width=3, command=self.details_overlay.destroy)
+        self.close_btn = tk.Button(self.cancel_area, text="X", font=("Arial", 12), bg="#F93111", fg=PRIMARY_FG, cursor="hand2", bd=0, width=3, command=self.details_overlay.destroy)
         self.close_btn.pack(side="right", pady=5, padx=(0, 10))
 
-        self.name_label = tk.Label(self.modal, text=item["name"], font=("Arial", 20, "bold"), bg="#334155", fg="#94A3B8")
+        self.name_label = tk.Label(self.modal, text=item["name"], font=("Arial", 20, "bold"), bg=SECONDARY_BG, fg="#94A3B8")
         self.name_label.pack(pady=5)
 
         self.name_department = item.get("departments", {}).get("name", "N/A")
-        self.department_label = tk.Label(self.modal, text=f"Department: {self.name_department}", font=("Arial", 14), bg="#334155", fg="#94A3B8")
+        self.department_label = tk.Label(self.modal, text=f"Department: {self.name_department}", font=("Arial", 14), bg=SECONDARY_BG, fg="#94A3B8")
         self.department_label.pack(pady=5)
 
         self.name_category = item.get("categories", {}).get("name", "N/A")
-        self.category_label = tk.Label(self.modal, text=f"Category: {self.name_category}", font=("Arial", 14), bg="#334155", fg="#94A3B8")
+        self.category_label = tk.Label(self.modal, text=f"Category: {self.name_category}", font=("Arial", 14), bg=SECONDARY_BG, fg="#94A3B8")
         self.category_label.pack(pady=5)
 
         condition = item.get("condition", "Good")
         is_available = item.get("status") == "Available" and condition not in ("Damaged", "Under Repair")
 
-        self.reserve_btn = tk.Button(self.modal, text="Reserve" if is_available else item.get("status", "Unavailable"), font=("Arial", 14, "bold"), bg="#3AFD50" if is_available else "#F87171", fg="#0F172A", cursor="hand2" if is_available else "arrow", state="normal" if is_available else "disabled", disabledforeground="#FFFFFF",command=lambda: self._confirm_reservation(item))
+        self.reserve_btn = tk.Button(self.modal, text="Reserve" if is_available else item.get("status", "Unavailable"), font=("Arial", 14, "bold"), bg="#3AFD50" if is_available else "#F87171", fg="#0F172A", cursor="hand2" if is_available else "arrow", state="normal" if is_available else "disabled", disabledforeground=PRIMARY_FG,command=lambda: self._confirm_reservation(item))
         self.reserve_btn.pack(pady=(60, 5))
 
     def _category_by_name(self, name):

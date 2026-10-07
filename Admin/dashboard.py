@@ -11,40 +11,16 @@ from Admin.pages.report import ReportsPage
 from Database.session_manager import clear_session
 from Authentication.auth_service import get_admin_dashboard_summary
 
+from Config.colors import PRIMARY_BG, SECONDARY_BG, WHITE_BG, PRIMARY_FG, MUTED_FG
+from Config.settings import NAV_LABELS, APP_NAME, W_DASHBOARD_TITLE, W_MANAGE_USERS_TITLE, W_MANAGE_INVENTORY_TITLE, W_MANAGE_RESERVATION_TITLE, W_REPORTS_TITLE
+from Config.layout import DASHBOARD_WINDOW_WIDTH, DASHBOARD_WINDOW_HEIGHT, BTN_WIDTH, BTN_FONT, BTN_CURSOR
+
 class AdminDashboard:
-
-    app_name = "Equipment Reservation"
-
-    window_width = 1500
-    window_height = 800
-
-    primary_bg = "#1E293B"
-    primary_fg = "#FFFFFF"
-
-    btn_font = ("Arial", 18)
-    btn_width = 12
-    btn_cursor = "hand2"
-
-    w_dashboard_title = "Dashboard"
-    w_manage_reservation_title = "Manage Reservation"
-    w_manage_inventory_title = "Manage Inventory"
-    w_manage_users_title = "Manage Users"
-    w_reports_title = "Reports"
-
-    nav_labels = {
-        "dashboard_btn": ("Dashboard", "🏠"),
-        "manage_reservation_btn": ("Manage\nReservation", "📋"),
-        "manage_inventory_btn": ("Manage\nInventory", "📦"),
-        "manage_users_btn": ("Manage Users", "👥"),
-        "reports_btn": ("Reports", "📊"),
-        "logout_btn": ("Log out", "🚪"),
-    }
-
     def __init__(self, admin: dict):
         self.user = admin
         self.admin_window = tk.Tk()
-        self.admin_window.title(f"{self.w_dashboard_title} - {self.app_name}")
-        self.admin_window.config(bg=self.primary_bg)
+        self.admin_window.title(f"{W_DASHBOARD_TITLE} - {APP_NAME}")
+        self.admin_window.config(bg=PRIMARY_BG)
         self.admin_window.state("zoomed")
 
         self._center_window()
@@ -58,20 +34,21 @@ class AdminDashboard:
 
         self.admin_window.mainloop()
 
-    def fg_bg(self):
-        return {"bg": self.primary_bg, "fg": self.primary_fg}
+    @staticmethod
+    def fg_bg():
+        return {"bg": PRIMARY_BG, "fg": PRIMARY_FG}
 
     def _center_window(self):
         screen_width = self.admin_window.winfo_screenwidth()
         screen_height = self.admin_window.winfo_screenheight()
-        x = (screen_width - self.window_width) // 2
-        y = (screen_height - self.window_height) // 2
-        self.admin_window.geometry(f"{self.window_width}x{self.window_height}+{x}+{y}")
+        x = (screen_width - DASHBOARD_WINDOW_WIDTH) // 2
+        y = (screen_height - DASHBOARD_WINDOW_HEIGHT) // 2
+        self.admin_window.geometry(f"{DASHBOARD_WINDOW_WIDTH}x{DASHBOARD_WINDOW_HEIGHT}+{x}+{y}")
 
     def _build_ui(self):
         self._top_navigation()
 
-        self.top_navigation_bottom_border = tk.Frame(self.admin_window, bg="#FFFFFF", width=2)
+        self.top_navigation_bottom_border = tk.Frame(self.admin_window, bg=WHITE_BG, width=2)
         self.top_navigation_bottom_border.pack(fill="x")
 
         self._parent_frame()
@@ -80,15 +57,15 @@ class AdminDashboard:
         self._highlight_active_button()
 
     def _top_navigation(self):
-        self.top_panel = tk.Frame(self.admin_window, bg=self.primary_bg, height=85)
+        self.top_panel = tk.Frame(self.admin_window, bg=PRIMARY_BG, height=85)
         self.top_panel.pack(fill="x")
         self.top_panel.propagate(False)
 
-        self.dashboard_app_name = tk.Label(self.top_panel, text=f"{self.app_name}", font=("Arial", 24), bg=self.primary_bg, fg=self.primary_fg)
+        self.dashboard_app_name = tk.Label(self.top_panel, text=f"{APP_NAME}", font=("Arial", 24), bg=PRIMARY_BG, fg=PRIMARY_FG)
         self.dashboard_app_name.pack(pady=(20, 0))
 
     def _parent_frame(self):
-        self.main_panel = tk.Frame(self.admin_window, bg=self.primary_bg)
+        self.main_panel = tk.Frame(self.admin_window, bg=PRIMARY_BG)
         self.main_panel.pack(fill="both", expand=True)
 
         self._left_frame()
@@ -96,23 +73,23 @@ class AdminDashboard:
         self._right_frame()
 
     def _left_frame(self):
-        self.left_panel = tk.Frame(self.main_panel, bg=self.primary_bg, width=300)
+        self.left_panel = tk.Frame(self.main_panel, bg=PRIMARY_BG, width=300)
         self.left_panel.pack(side="left", fill="y")
         self.left_panel.pack_propagate(False)
 
-        self.minimize_panel_btn = tk.Button(self.left_panel, text="<", font=("Arial", 12), width=3, cursor="hand2", bg=self.primary_bg, fg="#FFFFFF")
+        self.minimize_panel_btn = tk.Button(self.left_panel, text="<", font=("Arial", 12), width=3, cursor="hand2", bg=PRIMARY_BG, fg=PRIMARY_FG)
         self.minimize_panel_btn.pack(anchor="e", padx=(0, 20), pady=(20, 0))
-        self.dashboard_btn = tk.Button(self.left_panel, text=self.nav_labels["dashboard_btn"][0], **self.btn_config)
+        self.dashboard_btn = tk.Button(self.left_panel, text=NAV_LABELS["dashboard_btn"][0], **self.btn_config)
         self.dashboard_btn.pack(pady=(50, 0), padx=(80, 0))
-        self.manage_reservation_btn = tk.Button(self.left_panel, text=self.nav_labels["manage_reservation_btn"][0], **self.btn_config)
+        self.manage_reservation_btn = tk.Button(self.left_panel, text=NAV_LABELS["manage_reservation_btn"][0], **self.btn_config)
         self.manage_reservation_btn.pack(pady=(50, 0))
-        self.manage_inventory_btn = tk.Button(self.left_panel, text=self.nav_labels["manage_inventory_btn"][0], **self.btn_config)
+        self.manage_inventory_btn = tk.Button(self.left_panel, text=NAV_LABELS["manage_inventory_btn"][0], **self.btn_config)
         self.manage_inventory_btn.pack(pady=(50, 0))
-        self.manage_users_btn = tk.Button(self.left_panel, text=self.nav_labels["manage_users_btn"][0], **self.btn_config)
+        self.manage_users_btn = tk.Button(self.left_panel, text=NAV_LABELS["manage_users_btn"][0], **self.btn_config)
         self.manage_users_btn.pack(pady=(50, 0))
-        self.reports_btn = tk.Button(self.left_panel, text=self.nav_labels["reports_btn"][0], **self.btn_config)
+        self.reports_btn = tk.Button(self.left_panel, text=NAV_LABELS["reports_btn"][0], **self.btn_config)
         self.reports_btn.pack(pady=(50, 0))
-        self.logout_btn = tk.Button(self.left_panel, text=self.nav_labels["logout_btn"][0], **self.btn_config, command=self.logout)
+        self.logout_btn = tk.Button(self.left_panel, text=NAV_LABELS["logout_btn"][0], **self.btn_config, command=self.logout)
         self.logout_btn.pack(pady=(50, 0))
 
         self.minimize_panel_btn.bind("<Button-1>", lambda e: self.toggle_sidebar())
@@ -123,14 +100,15 @@ class AdminDashboard:
         self.reports_btn.bind("<Button-1>", self._on_nav_click)
 
     def _left_panel_border(self):
-        self.left_panel_right_border = tk.Frame(self.main_panel, bg="#FFFFFF", width=1)
+        self.left_panel_right_border = tk.Frame(self.main_panel, bg=PRIMARY_BG, width=1)
         self.left_panel_right_border.pack(side="left", fill="y")
 
-    def _button_style(self):
-        return {"font": self.btn_font, "width": self.btn_width, "cursor": self.btn_cursor, "bg": self.primary_bg, "fg": self.primary_fg,  "activebackground": self.primary_bg, "activeforeground": "#FFFFFF",}
+    @staticmethod
+    def _button_style():
+        return {"font": BTN_FONT, "width": BTN_WIDTH, "cursor": BTN_CURSOR, "bg": PRIMARY_BG, "fg": PRIMARY_FG,  "activebackground": PRIMARY_BG, "activeforeground": PRIMARY_FG,}
 
     def _right_frame(self):
-        self.right_panel = tk.Frame(self.main_panel, bg=self.primary_bg)
+        self.right_panel = tk.Frame(self.main_panel, bg=PRIMARY_BG)
         self.right_panel.pack(side="right", fill="both", expand=True)
 
         self._show_dashboard()
@@ -138,7 +116,7 @@ class AdminDashboard:
     def _show_dashboard(self):
         self._clear_right_panel()
 
-        self.admin_window.title(f"{self.w_dashboard_title} - {self.app_name}")
+        self.admin_window.title(f"{W_DASHBOARD_TITLE} - {APP_NAME}")
         self.dashboard_title = tk.Label(self.right_panel, text="Dashboard", font=("Arial", 24, "bold"), **self.colors)
         self.dashboard_title.pack(pady=(20, 10))
 
@@ -160,7 +138,7 @@ class AdminDashboard:
         self._summary_cards(summary)
 
     def _summary_cards(self, summary):
-        self.cards_frame = tk.Frame(self.right_panel, bg=self.primary_bg)
+        self.cards_frame = tk.Frame(self.right_panel, bg=PRIMARY_BG)
         self.cards_frame.pack(fill="both", expand=True, padx=40, pady=10)
 
         self.cards_frame.grid_columnconfigure(0, weight=1)
@@ -182,14 +160,15 @@ class AdminDashboard:
 
         self._create_card(self.cards_frame, "Pending Returns", str(summary["returning"]), row=2, column=1, on_click=lambda: self._navigate_to(self.manage_reservation_btn, tab="return"))
 
-    def _create_card(self, parent, title, value, row, column, on_click=None):
-        card = tk.Frame(parent, bg="#334155", cursor="hand2", height=180)
+    @staticmethod
+    def _create_card(parent, title, value, row, column, on_click=None):
+        card = tk.Frame(parent, bg=SECONDARY_BG, cursor="hand2", height=180)
         card.grid(row=row, column=column, padx=15, pady=15, sticky="nsew")
         card.grid_propagate(False)
 
-        value_label = tk.Label(card, text=value, font=("Arial", 20, "bold"), bg="#334155", fg=self.primary_fg)
+        value_label = tk.Label(card, text=value, font=("Arial", 20, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG)
         value_label.pack(pady=(60, 20))
-        title_label = tk.Label(card, text=title, font=("Arial", 24), bg="#334155", fg="#94A3BB")
+        title_label = tk.Label(card, text=title, font=("Arial", 24), bg=SECONDARY_BG, fg=MUTED_FG)
         title_label.pack(pady=(30, 10))
 
         if on_click:
@@ -222,11 +201,11 @@ class AdminDashboard:
         self.left_panel.config(width=300)
 
         for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn, self.manage_users_btn, self.reports_btn, self.logout_btn):
-            btn.config(width=self.btn_width, bg=self.primary_bg)
+            btn.config(width=BTN_WIDTH, bg=PRIMARY_BG)
 
     def _update_nav_labels(self, minimized):
         index = 1 if minimized else 0
-        for attr_name, labels in self.nav_labels.items():
+        for attr_name, labels in NAV_LABELS.items():
             btn = getattr(self, attr_name)
             btn.config(text=labels[index])
 
@@ -246,8 +225,8 @@ class AdminDashboard:
         else:
             for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn,
                         self.manage_users_btn, self.reports_btn):
-                btn.config(bg=self.primary_bg)
-            target_btn.config(bg="#334155")
+                btn.config(bg=PRIMARY_BG)
+            target_btn.config(bg=SECONDARY_BG)
 
         if target_btn == self.dashboard_btn:
             self._show_dashboard()
@@ -264,13 +243,13 @@ class AdminDashboard:
         self._loops_btn()
         for btn in (self.dashboard_btn, self.manage_reservation_btn, self.manage_inventory_btn, self.manage_users_btn,
                     self.reports_btn):
-            btn.config(bg=self.primary_bg)
+            btn.config(bg=PRIMARY_BG)
 
         if self.active_btn is None:
             return
 
         if self.is_left_panel_minimized:
-            self.active_btn.config(bg="#334155")
+            self.active_btn.config(bg=SECONDARY_BG)
         else:
             self.active_btn.pack_configure(padx=(80, 0))
 
@@ -279,22 +258,22 @@ class AdminDashboard:
             btn.pack_configure(padx=(0, 0))
 
     def _show_manage_reservation_page(self, tab=None):
-        self.admin_window.title(f"{self.w_manage_reservation_title} - {self.app_name}")
+        self.admin_window.title(f"{W_MANAGE_RESERVATION_TITLE} - {APP_NAME}")
         self._clear_right_panel()
         ManageReservationPage(self.right_panel, self.colors, initial_tab=tab or "request")
 
     def _show_manage_inventory_page(self):
-        self.admin_window.title(f"{self.w_manage_inventory_title} - {self.app_name}")
+        self.admin_window.title(f"{W_MANAGE_INVENTORY_TITLE} - {APP_NAME}")
         self._clear_right_panel()
         ManageInventoryPage(self.right_panel, self.colors)
 
     def _show_manage_users_page(self):
-        self.admin_window.title(f"{self.w_manage_users_title} - {self.app_name}")
+        self.admin_window.title(f"{W_MANAGE_USERS_TITLE} - {APP_NAME}")
         self._clear_right_panel()
         ManageUsersPage(self.right_panel, self.colors)
 
     def _show_reports_page(self):
-        self.admin_window.title(f"{self.w_reports_title} - {self.app_name}")
+        self.admin_window.title(f"{W_REPORTS_TITLE} - {APP_NAME}")
         self._clear_right_panel()
         ReportsPage(self.right_panel, self.colors)
 

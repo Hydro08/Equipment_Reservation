@@ -4,20 +4,16 @@ from tkinter import messagebox
 
 from Authentication.login import LoginWindow
 from Authentication.auth_service import sign_up_user
+from Config.colors import PRIMARY_FG, DARK_FG, DARK_BLUE_BG
+from Config.settings import APP_NAME
+from Config.layout import WINDOW_WIDTH, WINDOW_HEIGHT
 
 class RegisterWindow:
 
-    app_name = "Equipment Reservation"
-    window_width = 850
-    window_height = 680
-
-    primary_bg = "#0F172A"
-    primary_fg = "#FFFFFF"
-
     def __init__(self):
         self.register_window = tk.Tk()
-        self.register_window.title(f"{self.app_name} - Register")
-        self.register_window.config(bg=self.primary_bg)
+        self.register_window.title(f"{APP_NAME} - Register")
+        self.register_window.config(bg=DARK_BLUE_BG)
 
         self.colors = self.fg_bg()
 
@@ -26,18 +22,19 @@ class RegisterWindow:
 
         self.register_window.mainloop()
 
-    def fg_bg(self):
-        return {"bg": self.primary_bg, "fg": self.primary_fg}
+    @staticmethod
+    def fg_bg():
+        return {"bg": DARK_BLUE_BG, "fg": PRIMARY_FG}
 
     def _center_window(self):
         screen_width = self.register_window.winfo_screenwidth()
         screen_height = self.register_window.winfo_screenheight()
-        x = (screen_width - self.window_width) // 2
-        y = (screen_height - self.window_height) // 2
-        self.register_window.geometry(f"{self.window_width}x{self.window_height}+{x}+{y}")
+        x = (screen_width - WINDOW_WIDTH) // 2
+        y = (screen_height - WINDOW_HEIGHT) // 2
+        self.register_window.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{x}+{y}")
 
     def _build_ui(self):
-        self.register_text = tk.Label(self.register_window, text=f"{self.app_name}", font=("Arial", 24), **self.colors)
+        self.register_text = tk.Label(self.register_window, text=f"{APP_NAME}", font=("Arial", 24), **self.colors)
         self.register_text.pack(pady=(20, 0))
 
         self.create_label = tk.Label(self.register_window, text="Create an account", font=("Arial", 18), **self.colors)
@@ -54,7 +51,7 @@ class RegisterWindow:
         self.register_window.bind("<Return>", lambda event: self.register())
 
     def _username_frame(self):
-        self.username_panel = tk.Frame(self.register_window, bg=self.primary_bg)
+        self.username_panel = tk.Frame(self.register_window, bg=DARK_BLUE_BG)
         self.username_panel.pack(pady=(20,0))
 
         self.username_label = tk.Label(self.username_panel, text="Username", font=("Arial", 18), **self.colors)
@@ -64,7 +61,7 @@ class RegisterWindow:
         self.username_entry.bind("<Control-BackSpace>", lambda e: (self.username_entry.delete(0, tk.END), "break")[1])
 
     def _password_frame(self):
-        self.password_panel = tk.Frame(self.register_window, bg=self.primary_bg)
+        self.password_panel = tk.Frame(self.register_window, bg=DARK_BLUE_BG)
         self.password_panel.pack(pady=(20, 0))
 
         self.password_label = tk.Label(self.password_panel, text="Password", font=("Arial", 18), **self.colors)
@@ -74,12 +71,12 @@ class RegisterWindow:
         self.password_entry.bind("<Control-BackSpace>", lambda e: (self.password_entry.delete(0, tk.END), "break")[1])
         self.show_pass = tk.BooleanVar(value=False)
         self.show_pass_checkbox = tk.show_pass_checkbox = (
-            tk.Checkbutton(self.password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor="#0F172A", cursor="hand2", variable= self.show_pass, command = lambda: self.toggle_password(self.password_entry, self.show_pass))
+            tk.Checkbutton(self.password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor=DARK_FG, cursor="hand2", variable= self.show_pass, command = lambda: self.toggle_password(self.password_entry, self.show_pass))
         )
         self.show_pass_checkbox.pack(pady=(10, 0), side="left")
 
     def _confirm_password_frame(self):
-        self.confirm_password_panel = tk.Frame(self.register_window, bg=self.primary_bg)
+        self.confirm_password_panel = tk.Frame(self.register_window, bg=DARK_BLUE_BG)
         self.confirm_password_panel.pack(pady=(20, 0))
 
         self.confirm_password_label = tk.Label(self.confirm_password_panel, text="Confirm Password", font=("Arial", 18), **self.colors)
@@ -89,7 +86,7 @@ class RegisterWindow:
         self.confirm_password_entry.bind("<Control-BackSpace>", lambda e: (self.confirm_password_entry.delete(0, tk.END), "break")[1])
         self.show_confirm_pass = tk.BooleanVar(value=False)
         self.show_confirm_pass_checkbox = tk.show_confirm_pass_checkbox = (
-            tk.Checkbutton(self.confirm_password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor="#0F172A", activeforeground="white", cursor="hand2", variable=self.show_confirm_pass, command = lambda: self.toggle_password(self.confirm_password_entry, self.show_confirm_pass))
+            tk.Checkbutton(self.confirm_password_panel, text="Show Password", font=("Arial", 14), **self.colors, selectcolor=DARK_FG, activeforeground="white", cursor="hand2", variable=self.show_confirm_pass, command = lambda: self.toggle_password(self.confirm_password_entry, self.show_confirm_pass))
         )
         self.show_confirm_pass_checkbox.pack(pady=(10, 0), side="left")
 

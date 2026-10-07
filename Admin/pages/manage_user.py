@@ -3,14 +3,11 @@ import threading
 
 from tkinter import messagebox
 from Authentication.auth_service import get_all_users, set_user_banned, user_has_borrowed_items
-
-USER_PER_PAGE = 15
-USER_COLUMN = 5
+from Config.colors import PRIMARY_BG, SECONDARY_BG, GREEN_BG, DARK_BLUE_BG, BANNED_BG, RED_BG, PRIMARY_FG, MUTED_FG, STATUS_ERROR, STATUS_SUCCESS, DARK_FG
+from Config.layout import USER_COLUMN, USER_PER_PAGE
 
 class ManageUsersPage:
 
-    primary_bg = "#1E293B"
-    primary_fg = "#FFFFFF"
     FILTERS = [("all", "All"), ("active", "Active"), ("banned", "Banned")]
 
     def __init__(self, parent, colors):
@@ -23,10 +20,10 @@ class ManageUsersPage:
         self._build_ui()
 
     def _build_ui(self):
-        self.manage_users_panel = tk.Frame(self.parent, bg=self.primary_bg)
+        self.manage_users_panel = tk.Frame(self.parent, bg=PRIMARY_BG)
         self.manage_users_panel.pack(fill="both", expand=True)
 
-        header = tk.Frame(self.manage_users_panel, bg=self.primary_bg)
+        header = tk.Frame(self.manage_users_panel, bg=PRIMARY_BG)
         header.pack(fill="x", padx=20, pady=(20, 0))
         header.columnconfigure(0, weight=1)
 
@@ -34,12 +31,12 @@ class ManageUsersPage:
         self.title_label.grid(row=0, column=0, sticky="w")
 
         self.search_var = tk.StringVar()
-        self.search_frame = tk.Frame(header, bg=self.primary_bg)
+        self.search_frame = tk.Frame(header, bg=PRIMARY_BG)
         self.search_frame.grid(row=0, column=1, sticky="e")
 
-        tk.Label(self.search_frame, text="🔍", font=("Arial", 14), bg=self.primary_bg, fg=self.primary_fg).pack(
+        tk.Label(self.search_frame, text="🔍", font=("Arial", 14), bg=PRIMARY_BG, fg=PRIMARY_FG).pack(
             side="left", padx=(0, 8))
-        self.search_entry = tk.Entry(self.search_frame, textvariable=self.search_var, width=28, font=("Arial", 12),bg="#334155", fg="#FFFFFF", insertbackground="#FFFFFF", relief="flat")
+        self.search_entry = tk.Entry(self.search_frame, textvariable=self.search_var, width=28, font=("Arial", 12),bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat")
         self.search_entry.pack(side="left", ipady=4)
 
         self.search_entry.bind("<Control-BackSpace>", lambda e: (self.search_entry.delete(0, tk.END), "break")[1])
@@ -54,7 +51,7 @@ class ManageUsersPage:
         threading.Thread(target=self._fetch_users, daemon=True).start()
 
     def _build_tabs(self):
-        self.tab_frame = tk.Frame(self.manage_users_panel, bg=self.primary_bg)
+        self.tab_frame = tk.Frame(self.manage_users_panel, bg=PRIMARY_BG)
         self.tab_frame.pack(padx=20, pady=(15, 0), anchor="w")
 
         self.tab_buttons = {}
@@ -67,9 +64,9 @@ class ManageUsersPage:
     def _update_tab_styles(self):
         for mode, btn in self.tab_buttons.items():
             if mode == self.filter_mode:
-                btn.config(bg="#4ADE80", fg="#0F172A")
+                btn.config(bg=GREEN_BG, fg=DARK_FG)
             else:
-                btn.config(bg="#334155", fg="#FFFFFF")
+                btn.config(bg=SECONDARY_BG, fg=PRIMARY_FG)
 
     def _set_filter(self, mode):
         self.filter_mode = mode
@@ -110,7 +107,7 @@ class ManageUsersPage:
         self.loading_label.destroy()
         self.all_users = users
 
-        self.content_frame = tk.Frame(self.manage_users_panel, bg=self.primary_bg)
+        self.content_frame = tk.Frame(self.manage_users_panel, bg=PRIMARY_BG)
         self.content_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         self._render_list()
@@ -123,8 +120,9 @@ class ManageUsersPage:
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-    def _user_grid(self, parent):
-        frame = tk.Frame(parent, bg=self.primary_bg)
+    @staticmethod
+    def _user_grid(parent):
+        frame = tk.Frame(parent, bg=PRIMARY_BG)
         frame.pack(fill="x", padx=10, pady=10)
         for col in range(USER_COLUMN):
             frame.grid_columnconfigure(col, weight=1, uniform="user")
@@ -137,7 +135,7 @@ class ManageUsersPage:
 
         if not users:
             message = "No users found." if not  self.all_users else "No users match your search."
-            tk.Label(self.content_frame, text=message, font=("Arial", 14), bg=self.primary_bg, fg="#94A3B8").pack(pady=20)
+            tk.Label(self.content_frame, text=message, font=("Arial", 14), bg=PRIMARY_BG, fg=MUTED_FG).pack(pady=20)
             return
 
         total_pages = max(1, -(- len(users) // USER_PER_PAGE))
@@ -160,16 +158,16 @@ class ManageUsersPage:
     @staticmethod
     def _avatar(parent, name, bg, banned, size=50):
         canvas = tk.Canvas(parent, width=size, height=size, bg=bg, highlightthickness=0)
-        canvas.create_oval(2, 2, size - 2, size - 2, fill="#64748B" if banned else "#4ADE80", outline="")
+        canvas.create_oval(2, 2, size - 2, size - 2, fill=SECONDARY_BG if banned else GREEN_BG, outline="")
         initial = (name or "?").strip()[:1].upper() or "?"
-        canvas.create_text(size // 2, size // 2, text=initial, font=("Arial", 20, "bold"), fill="#0F172A")
+        canvas.create_text(size // 2, size // 2, text=initial, font=("Arial", 20, "bold"), fill=DARK_BLUE_BG)
         return canvas
 
     def _create_user_card(self, parent, user, row, col):
         banned = user.get("is_banned")
-        bg = "#3B2A33" if banned else "#334155"
+        bg = BANNED_BG if banned else SECONDARY_BG
 
-        card = tk.Frame(parent, bg=bg, height=130, highlightbackground="#F87171" if banned else bg, highlightthickness=1)
+        card = tk.Frame(parent, bg=bg, height=130, highlightbackground=RED_BG if banned else bg, highlightthickness=1)
         card.grid(row=row, column=col, padx=8, pady=8, sticky="nsew")
         card.grid_propagate(False)
 
@@ -179,15 +177,15 @@ class ManageUsersPage:
 
         self._avatar(card, user["username"], bg, banned).grid(row=0, column=0, rowspan=2, padx=(15, 12))
 
-        tk.Label(card, text=user["username"], font=("Arial", 15, "bold"), bg=bg, fg=self.primary_fg, anchor="w", justify="left", wraplength=180).grid(row=0, column=1, sticky="sw", padx=(0, 8))
-        tk.Label(card, text="• Banned" if banned else "• Active", font=("Arial", 11), bg=bg, fg="#F87171" if banned else "#4ADE80", anchor="w").grid(row=1, column=1, sticky="nw")
+        tk.Label(card, text=user["username"], font=("Arial", 15, "bold"), bg=bg, fg=PRIMARY_FG, anchor="w", justify="left", wraplength=180).grid(row=0, column=1, sticky="sw", padx=(0, 8))
+        tk.Label(card, text="• Banned" if banned else "• Active", font=("Arial", 11), bg=bg, fg=STATUS_ERROR if banned else STATUS_SUCCESS, anchor="w").grid(row=1, column=1, sticky="nw")
 
-        option_btn = tk.Label(card, text="⋮", font=("Arial", 18, "bold"), bg=bg, fg=self.primary_fg, cursor="hand2")
+        option_btn = tk.Label(card, text="⋮", font=("Arial", 18, "bold"), bg=bg, fg=PRIMARY_FG, cursor="hand2")
         option_btn.place(relx=1.0, x=-10, y=5, anchor="ne")
         option_btn.bind("<Button-1>", lambda e, u=user: self._show_user_menu(e, u))
 
     def _show_user_menu(self, event, user):
-        menu = tk.Menu(self.content_frame, tearoff=0, bg="#334155", fg=self.primary_fg, activebackground=self.primary_bg, activeforeground=self.primary_fg)
+        menu = tk.Menu(self.content_frame, tearoff=0, bg=SECONDARY_BG, fg=PRIMARY_FG, activebackground=PRIMARY_BG, activeforeground=PRIMARY_FG)
         if user.get("is_banned"):
             menu.add_command(label="Unban", command=lambda: self._toggle_ban(user, False))
         else:
@@ -214,12 +212,12 @@ class ManageUsersPage:
         if total_pages <= 1:
             return
 
-        nav_frame = tk.Frame(self.content_frame, bg=self.primary_bg)
+        nav_frame = tk.Frame(self.content_frame, bg=PRIMARY_BG)
         nav_frame.pack(pady=(20, 10))
 
-        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page > 0 else "disabled", command=self._go_previous_page).pack(side="left", padx=5)
-        tk.Label(nav_frame, text=f"Page {self.current_page + 1} of {total_pages}", font=("Arial", 12), bg=self.primary_bg, fg="#94A3B8").pack(side="left", padx=15)
-        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg="#334155", fg="#FFFFFF", cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page < total_pages - 1 else "disabled", command=self._go_next_page).pack(side="left", padx=5)
+        tk.Button(nav_frame, text="< Previous", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page > 0 else "disabled", command=self._go_previous_page).pack(side="left", padx=5)
+        tk.Label(nav_frame, text=f"Page {self.current_page + 1} of {total_pages}", font=("Arial", 12), bg=PRIMARY_BG, fg=MUTED_FG).pack(side="left", padx=15)
+        tk.Button(nav_frame, text="Next >", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=15, pady=5, state="normal" if self.current_page < total_pages - 1 else "disabled", command=self._go_next_page).pack(side="left", padx=5)
 
     def _go_next_page(self):
         self.current_page += 1

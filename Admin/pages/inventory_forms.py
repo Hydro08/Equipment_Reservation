@@ -1,35 +1,30 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-BG = "#1E293B"
-PANEL = "#334155"
-FG = "#FFFFFF"
-
-DEPT_CATE_WIDTH = 320
-DEPT_CATE_HEIGHT = 160
+from Config.colors import PRIMARY_BG, SECONDARY_BG, PRIMARY_FG, GREEN_BG, DARK_FG
+from Config.layout import DEPT_CATE_WIDTH, DEPT_CATE_HEIGHT
 
 class DepartmentForm(tk.Toplevel):
     def __init__(self, parent, on_save, initial_name=""):
-        super().__init__(parent, bg=BG)
+        super().__init__(parent, bg=PRIMARY_BG)
         self.title("Edit Department" if initial_name else "Add Department")
         self.transient(parent.winfo_toplevel())
         self.resizable(False, False)
         self.on_save = on_save
         self._center_window()
 
-        tk.Label(self, text="Department Name", font=("Arial", 13), bg=BG, fg=FG).grid(
+        tk.Label(self, text="Department Name", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).grid(
             row=0, column=0, padx=20, pady=(20, 8), sticky="w")
 
         self.name_var = tk.StringVar(value=initial_name)
-        entry = tk.Entry(self, textvariable=self.name_var, width=30, font=("Arial", 12),
-                         bg=PANEL, fg=FG, insertbackground=FG, relief="flat")
+        entry = tk.Entry(self, textvariable=self.name_var, width=30, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat")
         entry.grid(row=1, column=0, padx=20, pady=(0, 20), ipady=4)
         entry.bind("<Control-BackSpace>", self.clear_entry)
 
-        btn_frame = tk.Frame(self, bg=BG)
+        btn_frame = tk.Frame(self, bg=PRIMARY_BG)
         btn_frame.grid(row=2, column=0, pady=(0, 20))
-        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", command=self._save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
-        cancel_btn = tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=PANEL, fg=FG, command=self.destroy, padx=16, pady=4, bd=0, cursor="hand2")
+        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg=GREEN_BG, fg=DARK_FG, command=self._save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
+        cancel_btn = tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, command=self.destroy, padx=16, pady=4, bd=0, cursor="hand2")
         cancel_btn.pack(side="left", padx=6)
         self.grab_set()
         self.bind("<Return>", lambda e: self._save())
@@ -59,25 +54,25 @@ class DepartmentForm(tk.Toplevel):
 
 class CategoryForm(tk.Toplevel):
     def __init__(self, parent, on_save, initial_name=""):
-        super().__init__(parent, bg=BG)
+        super().__init__(parent, bg=PRIMARY_BG)
         self.title("Edit Category" if initial_name else "Add Category")
         self.transient(parent.winfo_toplevel())
         self.resizable(False, False)
         self.on_save = on_save
         self._center_window()
 
-        tk.Label(self, text="Category Name", font=("Arial", 13), bg=BG, fg=FG).grid(
+        tk.Label(self, text="Category Name", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).grid(
             row=0, column=0, padx=20, pady=(20, 8), sticky="w")
 
         self.name_var = tk.StringVar(value=initial_name)
-        entry = tk.Entry(self, textvariable=self.name_var, width=30, font=("Arial", 12), bg=PANEL, fg=FG, insertbackground=FG, relief="flat")
+        entry = tk.Entry(self, textvariable=self.name_var, width=30, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat")
         entry.grid(row=1, column=0, padx=20, pady=(0, 20), ipady=4)
         entry.bind("<Control-BackSpace>", self.clear_entry)
 
-        btn_frame = tk.Frame(self, bg=BG)
+        btn_frame = tk.Frame(self, bg=PRIMARY_BG)
         btn_frame.grid(row=2, column=0, pady=(0, 20))
-        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", command=self._save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
-        tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=PANEL, fg=FG, command=self.destroy, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
+        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg=GREEN_BG, fg=DARK_FG, command=self._save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
+        tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, command=self.destroy, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
         self.grab_set()
         self.bind("<Return>", lambda e: self._save())
 
@@ -112,7 +107,7 @@ class EquipmentForm(tk.Toplevel):
     height = 450
 
     def __init__(self, parent, department_name, category_name, department_id, category_id, on_save, item=None):
-        super().__init__(parent, bg=BG)
+        super().__init__(parent, bg=PRIMARY_BG)
         self.title("Edit Equipment" if item else "Add Equipment")
         self.transient(parent.winfo_toplevel())
         self.resizable(False, False)
@@ -125,30 +120,30 @@ class EquipmentForm(tk.Toplevel):
 
         item = item or {}
 
-        tk.Label(self, text="Name", font=("Arial", 13), bg=BG, fg=FG).grid(row=0, column=0, padx=20, pady=(20, 6), sticky="w")
+        tk.Label(self, text="Name", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).grid(row=0, column=0, padx=20, pady=(20, 6), sticky="w")
         self.name_var = tk.StringVar(value=item.get("name", ""))
-        name_entry = tk.Entry(self, textvariable=self.name_var, width=28, font=("Arial", 12), bg=PANEL, fg=FG, insertbackground=FG, relief="flat")
+        name_entry = tk.Entry(self, textvariable=self.name_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat")
         name_entry.grid(row=1, column=0, padx=20, pady=(0, 12), ipady=4)
         name_entry.bind("<Control-BackSpace>", self.clear_entry)
 
-        tk.Label(self, text="Department", font=("Arial", 13), bg=BG, fg=FG).grid(row=4, column=0, padx=20, pady=(0, 6), sticky="w")
-        tk.Label(self, text=department_name, font=("Arial", 13), bg=BG, fg=FG).grid(row=3, column=0, padx=20, pady=(0, 12), ipady=4)
+        tk.Label(self, text="Department", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).grid(row=4, column=0, padx=20, pady=(0, 6), sticky="w")
+        tk.Label(self, text=department_name, font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).grid(row=3, column=0, padx=20, pady=(0, 12), ipady=4)
 
-        tk.Label(self, text="Category", font=("Arial", 13), bg=BG, fg=FG).grid(row=2, column=0, padx=20, pady=(0, 6), sticky="w")
-        tk.Label(self, text=category_name, font=("Arial", 13), bg=BG, fg=FG).grid(row=5, column=0, padx=20, pady=(0, 12), ipady=4)
+        tk.Label(self, text="Category", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).grid(row=2, column=0, padx=20, pady=(0, 6), sticky="w")
+        tk.Label(self, text=category_name, font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).grid(row=5, column=0, padx=20, pady=(0, 12), ipady=4)
 
-        tk.Label(self, text="Status", font=("Arial", 13), bg=BG, fg=FG).grid(row=6, column=0, padx=20, pady=(0, 6), sticky="w")
+        tk.Label(self, text="Status", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).grid(row=6, column=0, padx=20, pady=(0, 6), sticky="w")
         self.status_var = tk.StringVar(value=item.get("status", "Available"))
         ttk.Combobox(self, textvariable=self.status_var, values=self.STATUSES, state="readonly", width=26).grid(row=7, column=0, padx=20, pady=(0, 12), ipady=3)
 
-        tk.Label(self, text="Condition", font=("Arial", 13), bg=BG, fg=FG).grid(row=8, column=0, padx=20, pady=(0, 6), sticky="w")
+        tk.Label(self, text="Condition", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).grid(row=8, column=0, padx=20, pady=(0, 6), sticky="w")
         self.condition_var = tk.StringVar(value=item.get("condition", "Good"))
         ttk.Combobox(self, textvariable=self.condition_var, values=self.CONDITIONS, state="readonly", width=26).grid(row=9, column=0, padx=20, pady=(0, 12), ipady=3)
 
-        btn_frame = tk.Frame(self, bg=BG)
+        btn_frame = tk.Frame(self, bg=PRIMARY_BG)
         btn_frame.grid(row=10, column=0, pady=(8, 20))
-        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", command=self._save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
-        tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=PANEL, fg=FG, command=self.destroy, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
+        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg=GREEN_BG, fg=DARK_FG, command=self._save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
+        tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, command=self.destroy, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
         self.grab_set()
         self.bind("<Return>", lambda e: self._save())
 

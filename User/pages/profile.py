@@ -5,21 +5,10 @@ from datetime import date, datetime, timezone
 from tkinter import messagebox
 
 from Authentication.auth_service import get_user_by_id, get_dashboard_summary, get_user_reservations, verify_current_password, rehash_user_password_by_id, can_change_username, change_username
-
-DUE_SOON_DAYS = 1
-RECENT_LIMIT = 5
+from Config.colors import PRIMARY_BG, SECONDARY_BG, GREEN_BG, DARK_BLUE_BG, PRIMARY_FG, MUTED_FG, DARK_FG, STATUS_SUCCESS, STATUS_WARNING, STATUS_ERROR, STATUS_RETURNED
+from Config.settings import DUE_SOON_DAYS, RECENT_LIMIT
 
 class ProfilePage:
-
-    BG = "#1E293B"
-    PANEL = "#334155"
-    FG = "#FFFFFF"
-    MUTED = "#94A3B8"
-    GREEN = "#4ADE80"
-    RED = "#F87171"
-    YELLOW = "#FBBF24"
-    BLUE = "#60A5FA"
-    DARK = "#0F172A"
 
     def __init__(self, parent, color, user, refresh_username_callback=None, navigate_reservation_callback=None):
         self.parent = parent
@@ -31,7 +20,7 @@ class ProfilePage:
         self._build_ui()
 
     def _build_ui(self):
-        self.profile_panel = tk.Frame(self.parent, bg="#1E293B")
+        self.profile_panel = tk.Frame(self.parent, bg=PRIMARY_BG)
         self.profile_panel.pack(fill="both", expand=True)
 
         self._load_profile_content()
@@ -40,8 +29,7 @@ class ProfilePage:
         self.profile_title = tk.Label(self.profile_panel, text="Profile", font=("Arial", 24), **self.colors)
         self.profile_title.pack(pady=(20, 0))
 
-        self.loading_label = tk.Label(self.profile_panel, text="Loading...", font=("Arial", 24), **self.colors,
-                                      height=50)
+        self.loading_label = tk.Label(self.profile_panel, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
 
         threading.Thread(target=self._fetch_profile_data, daemon=True).start()
@@ -110,7 +98,7 @@ class ProfilePage:
         self.loading_label.destroy()
         self.user_data = data["fresh_user"] or self.user
 
-        self.content_frame = tk.Frame(self.profile_panel, bg=self.BG)
+        self.content_frame = tk.Frame(self.profile_panel, bg=PRIMARY_BG)
         self.content_frame.pack(fill="both", expand=True, padx=40, pady=10)
 
         try:
@@ -118,22 +106,24 @@ class ProfilePage:
             self._build_stats(data["summary"], self._reservation_stats(data["reservations"]))
             self._build_recent_activity(data["reservations"])
         except Exception as e:
-            tk.Label(self.content_frame, text=f"Error loading profile: {e}", font=("Arial", 13), bg=self.BG, fg="#F87171", wraplength=800, justify="left").pack(pady=20)
+            tk.Label(self.content_frame, text=f"Error loading profile: {e}", font=("Arial", 13), bg=PRIMARY_BG, fg=STATUS_ERROR, wraplength=800, justify="left").pack(pady=20)
             raise
 
-    def _avatar(self, parent, name):
+    @staticmethod
+    def _avatar(parent, name):
         size = 84
-        canvas = tk.Canvas(parent, width=size, height=size, bg=self.PANEL, highlightthickness=0)
-        canvas.create_oval(2, 2, size - 2, size - 2, fill=self.GREEN, outline="")
+        canvas = tk.Canvas(parent, width=size, height=size, bg=SECONDARY_BG, highlightthickness=0)
+        canvas.create_oval(2, 2, size - 2, size - 2, fill=GREEN_BG, outline="")
         initial = (name or "?").strip()[:2].upper() or "?"
-        canvas.create_text(size // 2, size // 2, text=initial, font=("Arial", 32, "bold"), fill=self.DARK)
+        canvas.create_text(size // 2, size // 2, text=initial, font=("Arial", 32, "bold"), fill=DARK_BLUE_BG)
         return canvas
 
-    def _info_label(self, parent, row, text):
-        tk.Label(parent, text=text, font=("Arial", 13), bg=self.PANEL, fg=self.MUTED, anchor="w").grid(row=row, column=1, sticky="w", padx=(0, 20), pady=6)
+    @staticmethod
+    def _info_label(parent, row, text):
+        tk.Label(parent, text=text, font=("Arial", 13), bg=SECONDARY_BG, fg=MUTED_FG, anchor="w").grid(row=row, column=1, sticky="w", padx=(0, 20), pady=6)
 
     def _build_profile_info(self, username_hint, can_change):
-        card = tk.Frame(self.content_frame, bg=self.PANEL)
+        card = tk.Frame(self.content_frame, bg=SECONDARY_BG)
         card.pack(fill="x", pady=(10, 12))
 
         card.grid_columnconfigure(0, minsize=130)
@@ -141,69 +131,69 @@ class ProfilePage:
         card.grid_columnconfigure(2, weight=1)
         card.grid_columnconfigure(3, minsize=190)
 
-        tk.Label(card, text="Profile Info", font=("Arial", 16, "bold"), bg=self.PANEL, fg=self.FG).grid(row=0, column=0, columnspan=4, sticky="w", padx=20, pady=(15, 5))
+        tk.Label(card, text="Profile Info", font=("Arial", 16, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG).grid(row=0, column=0, columnspan=4, sticky="w", padx=20, pady=(15, 5))
 
         row = 1
 
         username = self.user_data.get("username", "N/A")
         self._info_label(card, row, "Username")
-        tk.Label(card, text=username, font=("Arial", 13, "bold"), bg=self.PANEL, fg=self.FG, anchor="w").grid(row=row, column=2, sticky="w", pady=6)
-        tk.Button(card, text="Change Username", font=("Arial", 11), width=16, bg=self.BG, fg=self.FG if can_change else self.MUTED, cursor="hand2", bd=0, pady=3, command=self._open_change_username).grid(row=row, column=3, sticky="e", padx=(10, 20), pady=6)
+        tk.Label(card, text=username, font=("Arial", 13, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG, anchor="w").grid(row=row, column=2, sticky="w", pady=6)
+        tk.Button(card, text="Change Username", font=("Arial", 11), width=16, bg=PRIMARY_BG, fg=PRIMARY_FG if can_change else MUTED_FG, cursor="hand2", bd=0, pady=3, command=self._open_change_username).grid(row=row, column=3, sticky="e", padx=(10, 20), pady=6)
         row+=1
 
         if username_hint:
-            tk.Label(card, text=username_hint, font=("Arial", 10, "italic"), bg=self.PANEL, fg=self.MUTED, anchor="w").grid(row=row, column=2, columnspan=2, sticky="w", pady=(0, 4))
+            tk.Label(card, text=username_hint, font=("Arial", 10, "italic"), bg=SECONDARY_BG, fg=MUTED_FG, anchor="w").grid(row=row, column=2, columnspan=2, sticky="w", pady=(0, 4))
             row+=1
 
         self._info_label(card, row, "Password")
-        tk.Label(card, text="••••••••••", font=("Arial", 13, "bold"), bg=self.PANEL, fg=self.FG, anchor="w").grid(row=row, column=2, sticky="w", pady=6)
-        tk.Button(card, text="Change Password", font=("Arial", 11), width=16, bg=self.BG, fg=self.FG, cursor="hand2", bd=0, pady=3, command=self._open_change_password).grid(row=row, column=3, sticky="e", padx=(10, 20), pady=6)
+        tk.Label(card, text="••••••••••", font=("Arial", 13, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG, anchor="w").grid(row=row, column=2, sticky="w", pady=6)
+        tk.Button(card, text="Change Password", font=("Arial", 11), width=16, bg=PRIMARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, pady=3, command=self._open_change_password).grid(row=row, column=3, sticky="e", padx=(10, 20), pady=6)
         row+=1
 
         banned = self.user_data.get("is_banned")
         self._info_label(card, row, "Role")
-        role_frame = tk.Frame(card, bg=self.PANEL)
+        role_frame = tk.Frame(card, bg=SECONDARY_BG)
         role_frame.grid(row=row, column=2, sticky="w", pady=6)
-        tk.Label(role_frame, text=self.user_data.get("role", "N/A").capitalize(), font=("Arial", 13, "bold"), bg=self.PANEL, fg=self.FG).pack(side="left")
-        tk.Label(role_frame, text="• Banned" if banned else "• Active", font=("Arial", 11, "bold"), bg=self.PANEL, fg=self.RED if banned else self.GREEN).pack(side="left", padx=(14, 0))
+        tk.Label(role_frame, text=self.user_data.get("role", "N/A").capitalize(), font=("Arial", 13, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG).pack(side="left")
+        tk.Label(role_frame, text="• Banned" if banned else "• Active", font=("Arial", 11, "bold"), bg=SECONDARY_BG, fg=STATUS_ERROR if banned else STATUS_SUCCESS).pack(side="left", padx=(14, 0))
         row+=1
 
         created_at = self.user_data.get("created_at")
         created_display = created_at.split("T")[0] if created_at else "N/A"
         self._info_label(card, row, "Created Account")
-        tk.Label(card, text=created_display, font=("Arial", 13, "bold"), bg=self.PANEL, fg=self.FG, anchor="w").grid(row=row, column=2, sticky="w", pady=(6, 16))
+        tk.Label(card, text=created_display, font=("Arial", 13, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG, anchor="w").grid(row=row, column=2, sticky="w", pady=(6, 16))
 
         self._avatar(card, username).grid(row=1, column=0, rowspan=row, sticky="n", padx=(20, 10), pady=(5, 0))
 
     def _build_stats(self, summary, reservation_stats):
         due_soon, overdue, total_borrowed = reservation_stats
 
-        stats_card = tk.Frame(self.content_frame, bg=self.PANEL)
+        stats_card = tk.Frame(self.content_frame, bg=SECONDARY_BG)
         stats_card.pack(fill="x", pady=(0, 12))
 
-        tk.Label(stats_card, text="My Stats", font=("Arial", 16, "bold"), bg=self.PANEL, fg=self.FG).pack(anchor="w", padx=20, pady=(10, 15))
+        tk.Label(stats_card, text="My Stats", font=("Arial", 16, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG).pack(anchor="w", padx=20, pady=(10, 15))
 
-        grid = tk.Frame(stats_card, bg=self.PANEL)
+        grid = tk.Frame(stats_card, bg=SECONDARY_BG)
         grid.pack(fill="x", padx=20, pady=(0, 15))
         for col in range(5):
             grid.grid_columnconfigure(col, weight=1, uniform="stat")
 
         stats = [
-            ("Pending", summary["pending"], self.FG, "pending"),
-            ("Borrowed", summary["borrowed"], self.FG, "borrowed"),
-            ("Due Soon", due_soon, self.YELLOW if due_soon else self.FG, "borrowed"),
-            ("Overdue", overdue, self.RED if overdue else self.FG, "borrowed"),
-            ("Total Borrowed", total_borrowed, self.FG, None),
+            ("Pending", summary["pending"], PRIMARY_FG, "pending"),
+            ("Borrowed", summary["borrowed"], PRIMARY_FG, "borrowed"),
+            ("Due Soon", due_soon, STATUS_WARNING if due_soon else PRIMARY_FG, "borrowed"),
+            ("Overdue", overdue, STATUS_ERROR if overdue else PRIMARY_FG, "borrowed"),
+            ("Total Borrowed", total_borrowed, PRIMARY_FG, None),
         ]
 
         for col, (label, value, color, tab) in enumerate(stats):
-            box = tk.Frame(grid, bg=self.BG, height=80)
+            box = tk.Frame(grid, bg=PRIMARY_BG, height=80)
             box.grid(row=0, column=col, padx=6, sticky="nsew")
             box.pack_propagate(False)
 
-            value_label = tk.Label(box, text=str(value), font=("Arial", 20, "bold"), bg=self.BG, fg=color)
+            value_label = tk.Label(box, text=str(value), font=("Arial", 20, "bold"), bg=PRIMARY_BG, fg=color)
             value_label.pack(pady=(12, 0))
-            title_label = tk.Label(box, text=label, font=("Arial", 10), bg=self.BG, fg=self.MUTED)
+            title_label = tk.Label(box, text=label, font=("Arial", 10), bg=PRIMARY_BG, fg=MUTED_FG)
             title_label.pack()
 
             if tab and self.navigate_reservation_callback:
@@ -216,55 +206,55 @@ class ProfilePage:
         if status == "Approved":
             due = self._parse_date(reservation.get("return_date"))
             if due and due < date.today():
-                return "Overdue", self.RED
-            return "Borrowed", self.GREEN
+                return "Overdue", STATUS_ERROR
+            return "Borrowed", STATUS_SUCCESS
 
         colors = {
-            "Pending": self.YELLOW,
-            "Return Pending": self.YELLOW,
-            "Returned": self.BLUE,
-            "Rejected": self.RED,
-            "Cancelled": self.MUTED,
+            "Pending": STATUS_WARNING,
+            "Return Pending": STATUS_WARNING,
+            "Returned": STATUS_RETURNED,
+            "Rejected": STATUS_ERROR,
+            "Cancelled": MUTED_FG,
         }
-        return status, colors.get(status, self.MUTED)
+        return status, colors.get(status, MUTED_FG)
 
     def _build_recent_activity(self, reservations):
-        card = tk.Frame(self.content_frame, bg=self.PANEL)
+        card = tk.Frame(self.content_frame, bg=SECONDARY_BG)
         card.pack(fill="x")
 
-        header = tk.Frame(card, bg=self.PANEL)
+        header = tk.Frame(card, bg=SECONDARY_BG)
         header.pack(fill="x", padx=20, pady=(12, 6))
-        tk.Label(header, text="Recent Activity", font=("Arial", 16, "bold"), bg=self.PANEL, fg=self.FG).pack(side="left")
+        tk.Label(header, text="Recent Activity", font=("Arial", 16, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG).pack(side="left")
 
         if self.navigate_reservation_callback:
-            tk.Button(header, text="View all >", font=("Arial", 11), bg=self.BG, fg=self.FG, cursor="hand2", bd=0, padx=12, pady=2, command=lambda: self.navigate_reservation_callback("pending")).pack(side="right")
+            tk.Button(header, text="View all >", font=("Arial", 11), bg=PRIMARY_BG, fg=PRIMARY_FG, cursor="hand2", bd=0, padx=12, pady=2, command=lambda: self.navigate_reservation_callback("pending")).pack(side="right")
 
         recent = sorted(reservations, key=lambda item: str(item.get("reserved_date") or ""), reverse=True)[:RECENT_LIMIT]
 
         if not recent:
-            tk.Label(card, text="No reservation yet.", font=("Arial", 12), bg=self.PANEL, fg=self.MUTED).pack(anchor="w", padx=20, pady=(0, 15))
+            tk.Label(card, text="No reservation yet.", font=("Arial", 12), bg=SECONDARY_BG, fg=MUTED_FG).pack(anchor="w", padx=20, pady=(0, 15))
             return
 
-        grid = tk.Frame(card, bg=self.PANEL)
+        grid = tk.Frame(card, bg=SECONDARY_BG)
         grid.pack(fill="x", padx=20, pady=(0, 12))
 
         columns = [("Equipment", 3), ("Reserved", 1), ("Return", 1), ("Status", 1)]
         for col, (title, weight) in enumerate(columns):
             grid.grid_columnconfigure(col, weight=weight, uniform="recent")
-            tk.Label(grid, text=title, font=("Arial", 11, "bold"), bg=self.PANEL, fg=self.MUTED, anchor="w").grid(row=0, column=col, sticky="w", pady=(0, 4))
+            tk.Label(grid, text=title, font=("Arial", 11, "bold"), bg=SECONDARY_BG, fg=MUTED_FG, anchor="w").grid(row=0, column=col, sticky="w", pady=(0, 4))
 
         for i, reservation in enumerate(recent, start=1):
             equipment = (reservation.get("equipment") or {}).get("name", "Unknown Equipment")
             status_text, status_color = self._status_display(reservation)
 
             values = [
-                (equipment, self.FG),
-                (str(reservation.get("reserved_date") or "N/A")[:10], self.MUTED),
-                (str(reservation.get("return_date") or "N/A")[:10], self.MUTED),
+                (equipment, PRIMARY_FG),
+                (str(reservation.get("reserved_date") or "N/A")[:10], MUTED_FG),
+                (str(reservation.get("return_date") or "N/A")[:10], MUTED_FG),
                 (status_text, status_color),
             ]
             for col, (text, color) in enumerate(values):
-                tk.Label(grid, text=text, font=("Arial", 12, "bold" if col == 3 else "normal"), bg=self.PANEL, fg=color, anchor="w").grid(row=i, column=col, sticky="w", pady=3)
+                tk.Label(grid, text=text, font=("Arial", 12, "bold" if col == 3 else "normal"), bg=SECONDARY_BG, fg=color, anchor="w").grid(row=i, column=col, sticky="w", pady=3)
 
     def _open_change_username(self):
         can_change, next_allowed = can_change_username(self.user["id"])
@@ -274,14 +264,14 @@ class ProfilePage:
             messagebox.showinfo("Not Yet", f"You can change your username again in about {hours_left} hour(s).")
             return
 
-        win = tk.Toplevel(self.profile_panel, bg=self.BG)
+        win = tk.Toplevel(self.profile_panel, bg=PRIMARY_BG)
         win.title("Change Username")
         win.resizable(False, False)
         win.transient(self.profile_panel.winfo_toplevel())
 
-        tk.Label(win, text="New Username", font=("Arial", 13), bg=self.BG, fg=self.FG).pack(padx=20, pady=(20, 6), anchor="w")
+        tk.Label(win, text="New Username", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).pack(padx=20, pady=(20, 6), anchor="w")
         username_var = tk.StringVar(value=self.user_data.get("username", ""))
-        entry = tk.Entry(win, textvariable=username_var, width=28, font=("Arial", 12), bg=self.PANEL, fg=self.FG, insertbackground=self.FG, relief="flat")
+        entry = tk.Entry(win, textvariable=username_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat")
         entry.pack(padx=20, pady=(0, 20), ipady=4)
         entry.focus_set()
 
@@ -312,16 +302,16 @@ class ProfilePage:
             else:
                 messagebox.showerror("Error", "Could not update the username. It may already be taken.", parent=win)
 
-        btn_frame = tk.Frame(win, bg=self.BG)
+        btn_frame = tk.Frame(win, bg=PRIMARY_BG)
         btn_frame.pack(pady=(0, 20))
-        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", command=save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
-        tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=self.PANEL, fg=self.FG, command=win.destroy, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
+        tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg=GREEN_BG, fg=DARK_FG, command=save, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
+        tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, command=win.destroy, padx=16, pady=4, bd=0, cursor="hand2").pack(side="left", padx=6)
 
         win.bind("<Return>", lambda e: save())
         win.grab_set()
 
     def _open_change_password(self):
-        win = tk.Toplevel(self.profile_panel, bg=self.BG)
+        win = tk.Toplevel(self.profile_panel, bg=PRIMARY_BG)
         win.title("Change Password")
         win.resizable(False, False)
         win.transient(self.profile_panel.winfo_toplevel())
@@ -334,29 +324,29 @@ class ProfilePage:
             y = (win.winfo_screenheight() - h) // 2
             win.geometry(f"{w}x{h}+{x}+{y}")
 
-        tk.Label(win, text="Current Password", font=("Arial", 13), bg=self.BG, fg=self.FG).pack(padx=20, pady=(20, 6), anchor="w")
+        tk.Label(win, text="Current Password", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).pack(padx=20, pady=(20, 6), anchor="w")
         current_var = tk.StringVar()
-        current_entry = tk.Entry(win, textvariable=current_var, width=28, font=("Arial", 12), bg=self.PANEL, fg=self.FG, insertbackground=self.FG, relief="flat", show="*")
+        current_entry = tk.Entry(win, textvariable=current_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat", show="*")
         current_entry.pack(padx=20, pady=(0, 10), ipady=4)
         current_entry.focus_set()
 
         show_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(win, text="Show Password", variable=show_var, font=("Arial", 11), bg=self.BG, fg=self.FG, selectcolor=self.BG, activebackground=self.BG, activeforeground=self.FG, cursor="hand2", command=lambda: toggle_show()).pack(anchor="w", padx=20)
+        tk.Checkbutton(win, text="Show Password", variable=show_var, font=("Arial", 11), bg=PRIMARY_BG, fg=PRIMARY_FG, selectcolor=PRIMARY_BG, activebackground=PRIMARY_BG, activeforeground=PRIMARY_FG, cursor="hand2", command=lambda: toggle_show()).pack(anchor="w", padx=20)
 
         new_var = tk.StringVar()
         confirm_var = tk.StringVar()
 
-        new_fields_frame = tk.Frame(win, bg=self.BG)
+        new_fields_frame = tk.Frame(win, bg=PRIMARY_BG)
 
-        tk.Label(new_fields_frame, text="New Password", font=("Arial", 13), bg=self.BG, fg=self.FG).pack(padx=20, pady=(10, 6), anchor="w")
-        new_entry = tk.Entry(new_fields_frame, textvariable=new_var, width=28, font=("Arial", 12), bg=self.PANEL, fg=self.FG, insertbackground=self.FG, relief="flat", show="*")
+        tk.Label(new_fields_frame, text="New Password", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).pack(padx=20, pady=(10, 6), anchor="w")
+        new_entry = tk.Entry(new_fields_frame, textvariable=new_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat", show="*")
         new_entry.pack(padx=20, pady=(0, 10), ipady=4)
 
-        tk.Label(new_fields_frame, text="Confirm New Password", font=("Arial", 13), bg=self.BG, fg=self.FG).pack(padx=20, pady=(0, 6), anchor="w")
-        confirm_entry = tk.Entry(new_fields_frame, textvariable=confirm_var, width=28, font=("Arial", 12), bg=self.PANEL, fg=self.FG, insertbackground=self.FG, relief="flat", show="*")
+        tk.Label(new_fields_frame, text="Confirm New Password", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).pack(padx=20, pady=(0, 6), anchor="w")
+        confirm_entry = tk.Entry(new_fields_frame, textvariable=confirm_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat", show="*")
         confirm_entry.pack(padx=20, pady=(0, 10), ipady=4)
 
-        btn_frame = tk.Frame(win, bg=self.BG)
+        btn_frame = tk.Frame(win, bg=PRIMARY_BG)
         btn_frame.pack(pady=(10, 20))
 
         def toggle_show():
@@ -402,13 +392,13 @@ class ProfilePage:
                 messagebox.showinfo("Success", "Password updated successfully.", parent=win)
                 win.destroy()
 
-        verify_btn = tk.Button(btn_frame, text="Verify", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", command=verify_current, padx=16, pady=4, bd=0, cursor="hand2")
+        verify_btn = tk.Button(btn_frame, text="Verify", font=("Arial", 12, "bold"), bg=GREEN_BG, fg=DARK_FG, command=verify_current, padx=16, pady=4, bd=0, cursor="hand2")
         verify_btn.pack(side="left", padx=6)
 
-        cancel_btn = tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=self.PANEL, fg=self.FG, command=win.destroy, padx=16, pady=4, bd=0, cursor="hand2")
+        cancel_btn = tk.Button(btn_frame, text="Cancel", font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, command=win.destroy, padx=16, pady=4, bd=0, cursor="hand2")
         cancel_btn.pack(side="left", padx=6)
 
-        save_btn = tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg="#4ADE80", fg="#0F172A", command=save_new_password, padx=16, pady=4, bd=0, cursor="hand2")
+        save_btn = tk.Button(btn_frame, text="Save", font=("Arial", 12, "bold"), bg=GREEN_BG, fg=DARK_FG, command=save_new_password, padx=16, pady=4, bd=0, cursor="hand2")
 
         win.bind("<Return>", lambda e: verify_current() if current_entry["state"] != "disabled" else save_new_password())
         center_window()
