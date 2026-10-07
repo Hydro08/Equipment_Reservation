@@ -4,7 +4,9 @@ from datetime import date, timedelta
 
 from Authentication.auth_service import get_all_equipment, get_all_departments, get_all_categories, create_reservation
 from Config.colors import PRIMARY_BG, PRIMARY_FG, SECONDARY_BG
-from Config.layout import GRID_ITEMS_PER_PAGE, POLL_INTERVAL_MS
+from Config.settings import POLL_INTERVAL_MS
+from Config.layout import GRID_ITEMS_PER_PAGE
+
 from tkinter import messagebox
 
 class BrowseEquipmentPage:

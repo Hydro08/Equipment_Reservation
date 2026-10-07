@@ -2,8 +2,10 @@ import calendar
 import tkinter as tk
 
 from datetime import date
+
 from Config.colors import PRIMARY_BG, SECONDARY_BG, PRIMARY_FG, MUTED_FG, DARK_FG, GREEN_BG, STATUS_SUCCESS, STATUS_ERROR
-from Config.settings import STATUS_COLORS, LEGEND, WEEKDAYS, MAX_CHIPS, CELL_HEIGHT, POPUP_COLUMNS, POPUP_PER_PAGE, POPUP_CARD_HEIGHT ,POPUP_CARD_WIDTH
+from Config.layout import MAX_CHIPS, CELL_HEIGHT, POPUP_COLUMNS, POPUP_PER_PAGE, POPUP_CARD_HEIGHT, POPUP_CARD_WIDTH
+from Config.settings import STATUS_COLORS, LEGEND, WEEKDAYS
 
 class ReservationCalendar:
 

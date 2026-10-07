@@ -12,7 +12,7 @@ from User.pages.profile import ProfilePage
 from Authentication.auth_service import get_dashboard_summary, get_user_by_id
 from Database.session_manager import clear_session
 from Config.colors import PRIMARY_BG, SECONDARY_BG, WHITE_BG, PRIMARY_FG, GREEN_BG, DARK_BLUE_BG, MUTED_FG
-from Config.settings import BAN_CHECK_MS, APP_NAME, W_DASHBOARD_TITLE, W_BROWSE_EQUIP_TITLE, W_RESERVATION_TITLE, W_NOTIFICATION_TITLE, W_PROFILE_TITLE, NAV_LABELS
+from Config.settings import BAN_CHECK_MS, SCHOOL_NAME, APP_NAME, W_DASHBOARD_TITLE, W_BROWSE_EQUIP_TITLE, W_RESERVATION_TITLE, W_NOTIFICATION_TITLE, W_PROFILE_TITLE, NAV_LABELS
 from Config.layout import DASHBOARD_WINDOW_WIDTH, DASHBOARD_WINDOW_HEIGHT, BTN_WIDTH, BTN_FONT, BTN_CURSOR
 
 class UserDashboard:
@@ -64,9 +64,12 @@ class UserDashboard:
         self.top_panel.pack(fill="x")
         self.top_panel.propagate(False)
 
-        self.dashboard_app_name = tk.Label(self.top_panel, text=f"{APP_NAME}", font=("Arial", 24), bg=PRIMARY_BG, fg=PRIMARY_FG)
-        self.dashboard_app_name.pack(side="left", padx=(20,0))
+        self.school_name = tk.Label(self.top_panel, text=SCHOOL_NAME, font=("Arial", 24), bg=PRIMARY_BG, fg=PRIMARY_FG)
+        self.school_name.pack(side="left", padx=(20, 0))
 
+        self.dashboard_app_name = tk.Label(self.top_panel, text=APP_NAME, font=("Arial", 24), bg=PRIMARY_BG, fg=PRIMARY_FG)
+        self.dashboard_app_name.place(relx=0.5, rely=0.5, anchor="center")
+        
         self.user_avatar = tk.Canvas(self.top_panel, width=44, height=44, bg=PRIMARY_BG, highlightthickness=0, cursor="hand2")
         self.user_avatar.pack(side="right", padx=(0, 20))
 

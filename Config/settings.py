@@ -1,5 +1,6 @@
 from Config.colors import STATUS_WARNING, STATUS_SUCCESS, STATUS_RETURNED, STATUS_ERROR
 
+SCHOOL_NAME = "Hydro University"
 APP_NAME = "Equipment Reservation"
 
 W_DASHBOARD_TITLE = "Dashboard"
@@ -21,6 +22,18 @@ NAV_LABELS = {
     "profile_btn": ("Profile", "👤"),
     "logout_btn": ("Log out", "🚪"),
 }
+
+ADMIN_NAV_LABELS = {
+    "dashboard_btn": ("Dashboard", "🏠"),
+    "manage_reservation_btn": ("Manage\n Reservation", "📋"),
+    "manage_inventory_btn": ("Manage\n Inventory", "📦"),
+    "manage_users_btn": ("Manage Users", "👥"),
+    "reports_btn": ("Reports", "📊"),
+    "logout_btn": ("Log out", "🚪"),
+}
+
+MAX_WARNINGS = 5
+LONG_OVERDUE_DAYS = 7
 
 BAN_CHECK_MS = 500
 POLL_INTERVAL_MS = 5000

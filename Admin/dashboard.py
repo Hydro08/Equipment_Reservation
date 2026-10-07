@@ -12,7 +12,7 @@ from Database.session_manager import clear_session
 from Authentication.auth_service import get_admin_dashboard_summary
 
 from Config.colors import PRIMARY_BG, SECONDARY_BG, WHITE_BG, PRIMARY_FG, MUTED_FG
-from Config.settings import NAV_LABELS, APP_NAME, W_DASHBOARD_TITLE, W_MANAGE_USERS_TITLE, W_MANAGE_INVENTORY_TITLE, W_MANAGE_RESERVATION_TITLE, W_REPORTS_TITLE
+from Config.settings import ADMIN_NAV_LABELS, SCHOOL_NAME, APP_NAME, W_DASHBOARD_TITLE, W_MANAGE_USERS_TITLE, W_MANAGE_INVENTORY_TITLE, W_MANAGE_RESERVATION_TITLE, W_REPORTS_TITLE
 from Config.layout import DASHBOARD_WINDOW_WIDTH, DASHBOARD_WINDOW_HEIGHT, BTN_WIDTH, BTN_FONT, BTN_CURSOR
 
 class AdminDashboard:
@@ -61,8 +61,11 @@ class AdminDashboard:
         self.top_panel.pack(fill="x")
         self.top_panel.propagate(False)
 
-        self.dashboard_app_name = tk.Label(self.top_panel, text=f"{APP_NAME}", font=("Arial", 24), bg=PRIMARY_BG, fg=PRIMARY_FG)
-        self.dashboard_app_name.pack(pady=(20, 0))
+        self.school_name = tk.Label(self.top_panel, text=SCHOOL_NAME, font=("Arial", 24), bg=PRIMARY_BG, fg=PRIMARY_FG)
+        self.school_name.pack(side="left", padx=(20, 0))
+
+        self.dashboard_app_name = tk.Label(self.top_panel, text=APP_NAME, font=("Arial", 24), bg=PRIMARY_BG, fg=PRIMARY_FG)
+        self.dashboard_app_name.place(relx=0.5, rely=0.5, anchor="center")
 
     def _parent_frame(self):
         self.main_panel = tk.Frame(self.admin_window, bg=PRIMARY_BG)
@@ -79,17 +82,17 @@ class AdminDashboard:
 
         self.minimize_panel_btn = tk.Button(self.left_panel, text="<", font=("Arial", 12), width=3, cursor="hand2", bg=PRIMARY_BG, fg=PRIMARY_FG)
         self.minimize_panel_btn.pack(anchor="e", padx=(0, 20), pady=(20, 0))
-        self.dashboard_btn = tk.Button(self.left_panel, text=NAV_LABELS["dashboard_btn"][0], **self.btn_config)
+        self.dashboard_btn = tk.Button(self.left_panel, text=ADMIN_NAV_LABELS["dashboard_btn"][0], **self.btn_config)
         self.dashboard_btn.pack(pady=(50, 0), padx=(80, 0))
-        self.manage_reservation_btn = tk.Button(self.left_panel, text=NAV_LABELS["manage_reservation_btn"][0], **self.btn_config)
+        self.manage_reservation_btn = tk.Button(self.left_panel, text=ADMIN_NAV_LABELS["manage_reservation_btn"][0], **self.btn_config)
         self.manage_reservation_btn.pack(pady=(50, 0))
-        self.manage_inventory_btn = tk.Button(self.left_panel, text=NAV_LABELS["manage_inventory_btn"][0], **self.btn_config)
+        self.manage_inventory_btn = tk.Button(self.left_panel, text=ADMIN_NAV_LABELS["manage_inventory_btn"][0], **self.btn_config)
         self.manage_inventory_btn.pack(pady=(50, 0))
-        self.manage_users_btn = tk.Button(self.left_panel, text=NAV_LABELS["manage_users_btn"][0], **self.btn_config)
+        self.manage_users_btn = tk.Button(self.left_panel, text=ADMIN_NAV_LABELS["manage_users_btn"][0], **self.btn_config)
         self.manage_users_btn.pack(pady=(50, 0))
-        self.reports_btn = tk.Button(self.left_panel, text=NAV_LABELS["reports_btn"][0], **self.btn_config)
+        self.reports_btn = tk.Button(self.left_panel, text=ADMIN_NAV_LABELS["reports_btn"][0], **self.btn_config)
         self.reports_btn.pack(pady=(50, 0))
-        self.logout_btn = tk.Button(self.left_panel, text=NAV_LABELS["logout_btn"][0], **self.btn_config, command=self.logout)
+        self.logout_btn = tk.Button(self.left_panel, text=ADMIN_NAV_LABELS["logout_btn"][0], **self.btn_config, command=self.logout)
         self.logout_btn.pack(pady=(50, 0))
 
         self.minimize_panel_btn.bind("<Button-1>", lambda e: self.toggle_sidebar())
@@ -100,7 +103,7 @@ class AdminDashboard:
         self.reports_btn.bind("<Button-1>", self._on_nav_click)
 
     def _left_panel_border(self):
-        self.left_panel_right_border = tk.Frame(self.main_panel, bg=PRIMARY_BG, width=1)
+        self.left_panel_right_border = tk.Frame(self.main_panel, bg=WHITE_BG, width=1)
         self.left_panel_right_border.pack(side="left", fill="y")
 
     @staticmethod
@@ -205,7 +208,7 @@ class AdminDashboard:
 
     def _update_nav_labels(self, minimized):
         index = 1 if minimized else 0
-        for attr_name, labels in NAV_LABELS.items():
+        for attr_name, labels in ADMIN_NAV_LABELS.items():
             btn = getattr(self, attr_name)
             btn.config(text=labels[index])
 

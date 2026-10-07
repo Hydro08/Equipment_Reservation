@@ -292,3 +292,10 @@ CHANGED
 FIXED
 - Missing bg= in user_window.config(PRIMARY_BG) (dashboard.py)
 - Typo "Browser Equipment" → "Browse Equipment"
+
+Oct 8, 2026 (Thursday)
+POSSIBLE TASK
+- Notification Reminder
+- Hybrid banned count each item = 1 and 7 days = 1
+- School Name dashboard
+    - New Dashboard layout [School Name(left) Reservation Equipment(center) username & avatar(right)
