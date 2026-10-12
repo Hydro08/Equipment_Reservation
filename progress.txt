@@ -293,9 +293,38 @@ FIXED
 - Missing bg= in user_window.config(PRIMARY_BG) (dashboard.py)
 - Typo "Browser Equipment" → "Browse Equipment"
 
-Oct 8, 2026 (Thursday)
-POSSIBLE TASK
-- Notification Reminder
-- Hybrid banned count each item = 1 and 7 days = 1
-- School Name dashboard
-    - New Dashboard layout [School Name(left) Reservation Equipment(center) username & avatar(right)
+Oct 8 - 11
+- Busy
+
+Oct 12, 2026 (Monday)
+ADDED
+- Overdue warning system (hybrid count)
+    - +1 warning per overdue item (once per reservation)
+    - +1 more if still not returned after 7 days (once only)
+    - Max of +2 warnings per item
+- overdue_service.py: evaluate_overdue(), warning_outcome(), run_overdue_check()
+- Overdue check runs on the admin dashboard (background thread, every OVERDUE_CHECK_MS)
+- Notification reminders for overdue items (once every 24 hours)
+- notifications table (warnings, reminders, ban notice)
+- Restricted mode: a banned user can still log in but can only open My Reservation (borrowed) and Log out
+- Ban safety net: users who reach MAX_WARNINGS are banned even if the count was not set by the check
+- New auth_service functions: get_overdue_candidates, update_reservation_flags, add_user_warnings, create_notification, get_unseen_messages, dismiss_message, user_has_overdue_items, get_users_over_warning_limit
+- New columns: reservation (overdue_warned, long_overdue_warned, last_reminder_at), users (warning_count)
+- Config: MAX_WARNINGS, WARNING_ALERT_AT, LONG_OVERDUE_DAYS, OVERDUE_REMINDER_HOURS, OVERDUE_CHECK_MS, BAN_MESSAGE, ADMIN_NAV_LABELS
+- School name (Hyd University) and new top bar layout: [School Name] [App Name] [Username & Avatar]
+
+CHANGED
+- Notification page now shows reservation updates and warning/reminder messages together
+- Users with overdue items can no longer reserve (create_reservation) or be approved (update_reservation_status)
+- browse_equipment.py now shows messages for "overdue" and "banned" results
+- Unban now resets warning_count to 0
+- Login no longer blocks banned users (they go to restricted mode)
+- BAN_MESSAGE now tells the user to return borrowed equipment first, then submit a letter to the department
+- _check_ban now restricts or reinstates the user instead of forcing logout
+
+FIXED
+- _enter_restricted_mode was called before _build_ui (AttributeError: no attribute 'dashboard_btn')
+- update_reservation_flags used the wrong column (reservation_id instead of id)
+- notifications table: user_id type changed to uuid, notification_id renamed to id
+- "Hyd University" typo in SCHOOL_NAME
+- Unresolved reference 'run_overdue_check' in admin dashboard (missing import)

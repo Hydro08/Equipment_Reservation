@@ -10,9 +10,10 @@ from Admin.pages.report import ReportsPage
 
 from Database.session_manager import clear_session
 from Authentication.auth_service import get_admin_dashboard_summary
+from Authentication.overdue_service import run_overdue_check
 
 from Config.colors import PRIMARY_BG, SECONDARY_BG, WHITE_BG, PRIMARY_FG, MUTED_FG
-from Config.settings import ADMIN_NAV_LABELS, SCHOOL_NAME, APP_NAME, W_DASHBOARD_TITLE, W_MANAGE_USERS_TITLE, W_MANAGE_INVENTORY_TITLE, W_MANAGE_RESERVATION_TITLE, W_REPORTS_TITLE
+from Config.settings import OVERDUE_CHECK_MS,ADMIN_NAV_LABELS, SCHOOL_NAME, APP_NAME, W_DASHBOARD_TITLE, W_MANAGE_USERS_TITLE, W_MANAGE_INVENTORY_TITLE, W_MANAGE_RESERVATION_TITLE, W_REPORTS_TITLE
 from Config.layout import DASHBOARD_WINDOW_WIDTH, DASHBOARD_WINDOW_HEIGHT, BTN_WIDTH, BTN_FONT, BTN_CURSOR
 
 class AdminDashboard:
@@ -22,6 +23,9 @@ class AdminDashboard:
         self.admin_window.title(f"{W_DASHBOARD_TITLE} - {APP_NAME}")
         self.admin_window.config(bg=PRIMARY_BG)
         self.admin_window.state("zoomed")
+
+        self._overdue_after_id = None
+        self._start_overdue_check()
 
         self._center_window()
 
@@ -284,11 +288,46 @@ class AdminDashboard:
         for widget in self.right_panel.winfo_children():
             widget.destroy()
 
+    def _start_overdue_check(self):
+        # noinspection PyTypeChecker
+        self._overdue_after_id = self.admin_window.after(1000, self._check_overdue)
+
+    def _check_overdue(self):
+        if not self.admin_window.winfo_exists():
+            return
+        threading.Thread(target=self._overdue_worker, daemon=True).start()
+
+    def _overdue_worker(self):
+        try:
+            run_overdue_check()
+        except Exception as e:
+            print(f"Overdue check failed: {e}")
+        try:
+            # noinspection PyTypeChecker
+            self.admin_window.after(0, self._schedule_next_overdue_check)
+        except (tk.TclError, RuntimeError):
+            pass
+
+    def _schedule_next_overdue_check(self):
+        if not self.admin_window.winfo_exists():
+            return
+        # noinspection PyTypeChecker
+        self._overdue_after_id = self.admin_window.after(OVERDUE_CHECK_MS, self._check_overdue)
+
+    def _cancel_overdue_check(self):
+        if self._overdue_after_id:
+            try:
+                self.admin_window.after_cancel(self._overdue_after_id)
+            except tk.TclError:
+                pass
+            self._overdue_after_id = None
+
     def logout(self):
         logout_question = messagebox.askyesno("Confirm Logout", "Are you sure to logout?")
 
         if logout_question:
             clear_session()
+            self._cancel_overdue_check()
 
             self.admin_window.destroy()
 

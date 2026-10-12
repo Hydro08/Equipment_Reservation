@@ -19,9 +19,6 @@ def login_user(identifier: str, plain_password: str):
     stored_hash = user["password_hash"].encode("utf-8")
 
     if bcrypt.checkpw(plain_password.encode("utf-8"), stored_hash):
-        if user.get("is_banned"):
-            messagebox.showinfo("Account Banned!", "Your account has been banned. Please contact the administrator.")
-            return None
         return user
     else:
         messagebox.showinfo("Error", "Incorrect Password.")
@@ -153,7 +150,11 @@ def get_all_users():
 
 def set_user_banned(user_id, banned: bool):
     try:
-        query: Any = supabase.table("users").update({"is_banned": banned}).eq("id", user_id).eq("role", "user")
+        update_data = {"is_banned": banned}
+        if not banned:
+            update_data["warning_count"] = 0
+
+        query: Any = supabase.table("users").update(update_data).eq("id", user_id).eq("role", "user")
         response = query.execute()
 
         if not response.data:
@@ -217,6 +218,12 @@ def get_categories_by_department(department_id):
 
 def create_reservation(user_id, equipment_id, reserved_date, return_date):
     try:
+        user = get_user_by_id(user_id)
+        if user and user.get("is_banned"):
+            return "banned"
+        if user_has_overdue_items(user_id):
+            return "overdue"
+
         equipment_check: Any = supabase.table("equipment").select("status, condition").eq("id", equipment_id)
         equipment = equipment_check.execute()
 
@@ -261,6 +268,13 @@ def get_pending_reservation():
 
 def update_reservation_status(reservation_id, new_status):
     try:
+        if new_status == "Approved":
+            owner: Any = supabase.table("reservation").select("user_id").eq("id", reservation_id)
+            owner_res = owner.execute()
+            if owner_res.data and user_has_overdue_items(owner_res.data[0]["user_id"]):
+                messagebox.showwarning("Cannot Approved", "This user has overdue items. Please reject this request or wait for the items to be returned.")
+                return False
+
         now_iso = datetime.now(timezone.utc).isoformat()
 
         response_query: Any = supabase.table("reservation").update({
@@ -415,6 +429,73 @@ def dismiss_notification(reservation_id):
     except Exception as e:
         messagebox.showerror("Database Error", f"Error dismissing notification: {e}")
         return False
+
+def get_overdue_candidates():
+    try:
+        query: Any = supabase.table("reservation").select("*, equipment(name)").eq("status", "Approved").lt("return_date", str(date.today()))
+        response = query.execute()
+        return response.data or []
+    except Exception as e:
+        print(f"Error fetching overdue reservations: {e}")
+        return []
+
+def update_reservation_flags(reservation_id, flags: dict):
+    try:
+        query: Any = supabase.table("reservation").update(flags).eq("id", reservation_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        print(f"Error updating reservation flags: {e}")
+        return False
+
+def add_user_warnings(user_id, amount):
+    try:
+        user = get_user_by_id(user_id)
+        if not user:
+            return None
+        new_count = (user.get("warning_count") or 0) + amount
+        query: Any = supabase.table("users").update({"warning_count": new_count}).eq("id", user_id)
+        response = query.execute()
+        return new_count if response.data else None
+    except Exception as e:
+        print(f"Error adding warnings: {e}")
+        return None
+
+def create_notification(user_id, message, kind="info"):
+    try:
+        query: Any = supabase.table("notifications").insert({"user_id": user_id, "message": message, "kind": kind})
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        print(f"Error creating notification: {e}")
+        return False
+
+def get_unseen_messages(user_id):
+    try:
+        query: Any = supabase.table("notifications").select("*").eq("user_id", user_id).eq("is_seen", False)
+        response = query.order("id", desc=True).execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching messages: {e}")
+        return []
+
+def dismiss_message(message_id):
+    try:
+        query: Any = supabase.table("notifications").update({"is_seen": True}).eq("id", message_id)
+        response = query.execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error dismissing message: {e}")
+        return True
+
+def user_has_overdue_items(user_id):
+    try:
+        query: Any = supabase.table("reservation").select("id").eq("user_id", user_id).eq("status", "Approved").lt("return_date", str(date.today()))
+        response = query.limit(1).execute()
+        return bool(response.data)
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error checking overdue items: {e}")
+        return True
 
 def add_department(name):
     try:
@@ -601,4 +682,13 @@ def get_reservation_report(days=None):
         return response.data or []
     except Exception as e:
         messagebox.showerror("Database Error", f"Error fetching report: {e}")
+        return []
+
+def get_users_over_warning_limit(limit):
+    try:
+        query: Any = supabase.table("users").select("id").eq("role", "user").eq("is_banned", False).gte("warning_count", limit)
+        response = query.execute()
+        return response.data or []
+    except Exception as e:
+        print(f"Error fetching users over limit: {e}")
         return []

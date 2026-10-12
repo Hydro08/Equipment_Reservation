@@ -7,14 +7,12 @@ from Admin.dashboard import AdminDashboard
 from User.dashboard import UserDashboard
 
 from Authentication.auth_service import login_user, get_user_by_id
-from Database.session_manager import save_session, load_session, clear_session
-from Config.colors import PRIMARY_BG, PRIMARY_FG, DARK_FG, DARK_BLUE_BG
+from Database.session_manager import save_session, load_session
+from Config.colors import PRIMARY_FG, DARK_FG, DARK_BLUE_BG
 from Config.settings import APP_NAME
 from Config.layout import WINDOW_WIDTH, WINDOW_HEIGHT
 
 class LoginWindow:
-    banned_notice = False
-
     def __init__(self):
         self.login_window = tk.Tk()
         self.login_window.title(f"{APP_NAME} - Login")
@@ -24,10 +22,6 @@ class LoginWindow:
         saved_user_id = load_session()
         if saved_user_id:
             user = get_user_by_id(saved_user_id)
-            if user and user.get("is_banned"):
-                clear_session()
-                self.banned_notice = True
-                user = None
 
             if user:
                 self.login_window.destroy()
@@ -41,10 +35,6 @@ class LoginWindow:
         self.colors = self.fg_bg()
         self._center_window()
         self._build_ui()
-
-        if self.banned_notice:
-            # noinspection PyTypeChecker
-            self.login_window.after(200, lambda: messagebox.showinfo("Account Banned!", "Your account has been banned. Please contact the administrator."))
 
         self.login_window.mainloop()
 

@@ -3,8 +3,9 @@ import threading
 
 from datetime import datetime, timezone, date
 from tkinter import messagebox
-from Authentication.auth_service import get_user_notification,dismiss_notification
-from Config.colors import PRIMARY_BG, SECONDARY_BG, RED_BG, PRIMARY_FG, MUTED_FG, STATUS_SUCCESS, STATUS_RETURNED, STATUS_ERROR, DARK_FG
+from Authentication.auth_service import get_user_notification,dismiss_notification, get_unseen_messages, dismiss_message
+from Config.colors import PRIMARY_BG, SECONDARY_BG, RED_BG, PRIMARY_FG, MUTED_FG, STATUS_SUCCESS, STATUS_RETURNED, \
+    STATUS_ERROR, DARK_FG, STATUS_WARNING
 from Config.layout import NOTIFICATIONS_PER_PAGE
 
 class NotificationPage:
@@ -30,8 +31,16 @@ class NotificationPage:
         threading.Thread(target=self._fetch_notifications, daemon=True).start()
 
     def _fetch_notifications(self):
-        notifications = get_user_notification(self.user["id"])
+        reservations = get_user_notification(self.user["id"])
+        for r in reservations:
+            r["_source"] = "reservation"
 
+        messages = get_unseen_messages(self.user["id"])
+        for m in messages:
+            m["_source"] = "message"
+            m["status_updated_at"] = m["created_at"]
+            
+        notifications = reservations + messages
         self.notification_panel.after(0, self._render_notifications, notifications)
 
     def _render_notifications(self, notifications):
@@ -75,19 +84,23 @@ class NotificationPage:
         self._pagination_controls(total_pages)
 
     def _create_notification_row(self, note):
-        equipment_data = note.get("equipment") or {}
-        equipment_name = equipment_data.get("name", "Unknown Equipment")
-        status = note.get("status")
-
-        if status == "Approved":
-            message = f"We accepted your request for {equipment_name}. Please return this after 3 days."
-            color = STATUS_SUCCESS
-        elif status == "Returned":
-            message = f"Thank you for returning {equipment_name}! We hope it served you well."
-            color = STATUS_RETURNED
+        if note.get("_source") == "messages":
+            message = note["message"]
+            color = {"ban": STATUS_ERROR, "warning": STATUS_WARNING}.get(note.get("kind"), STATUS_RETURNED)
         else:
-            message = f"Sorry, we rejected your request for {equipment_name}."
-            color = STATUS_ERROR
+            equipment_data = note.get("equipment") or {}
+            equipment_name = equipment_data.get("name", "Unknown Equipment")
+            status = note.get("status")
+
+            if status == "Approved":
+                message = f"We accepted your request for {equipment_name}. Please return this after 3 days."
+                color = STATUS_SUCCESS
+            elif status == "Returned":
+                message = f"Thank you for returning {equipment_name}! We hope it served you well."
+                color = STATUS_RETURNED
+            else:
+                message = f"Sorry, we rejected your request for {equipment_name}."
+                color = STATUS_ERROR
 
         row = tk.Frame(self.content_frame, bg=SECONDARY_BG)
         row.pack(fill="x", padx=10, pady=6)
@@ -101,7 +114,12 @@ class NotificationPage:
         if not messagebox.askyesno("Confirm", "Delete this notification?"):
             return
 
-        if dismiss_notification(note["id"]):
+        if note.get("_source") == "message":
+            ok = dismiss_message(note["id"])
+        else:
+            ok = dismiss_notification(note["id"])
+
+        if ok:
             self.all_notifications.remove(note)
             self._render_list()
         else:

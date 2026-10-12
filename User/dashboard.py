@@ -11,8 +11,8 @@ from User.pages.profile import ProfilePage
 
 from Authentication.auth_service import get_dashboard_summary, get_user_by_id
 from Database.session_manager import clear_session
-from Config.colors import PRIMARY_BG, SECONDARY_BG, WHITE_BG, PRIMARY_FG, GREEN_BG, DARK_BLUE_BG, MUTED_FG
-from Config.settings import BAN_CHECK_MS, SCHOOL_NAME, APP_NAME, W_DASHBOARD_TITLE, W_BROWSE_EQUIP_TITLE, W_RESERVATION_TITLE, W_NOTIFICATION_TITLE, W_PROFILE_TITLE, NAV_LABELS
+from Config.colors import PRIMARY_BG, SECONDARY_BG, WHITE_BG, PRIMARY_FG, GREEN_BG, DARK_BLUE_BG, MUTED_FG, STATUS_ERROR
+from Config.settings import BAN_CHECK_MS, SCHOOL_NAME, APP_NAME, W_DASHBOARD_TITLE, W_BROWSE_EQUIP_TITLE, W_RESERVATION_TITLE, W_NOTIFICATION_TITLE, W_PROFILE_TITLE, NAV_LABELS, get_ban_message
 from Config.layout import DASHBOARD_WINDOW_WIDTH, DASHBOARD_WINDOW_HEIGHT, BTN_WIDTH, BTN_FONT, BTN_CURSOR
 
 class UserDashboard:
@@ -23,6 +23,7 @@ class UserDashboard:
         self.user_window.minsize(DASHBOARD_WINDOW_WIDTH, DASHBOARD_WINDOW_HEIGHT)
         self.user_window.config(bg=PRIMARY_BG)
         self.user_window.state("zoomed")
+        self.is_restricted = bool(user.get("is_banned"))
 
         self._center_window()
 
@@ -32,6 +33,9 @@ class UserDashboard:
         self.colors = self.fg_bg()
         self.btn_config = self._button_style()
         self._build_ui()
+
+        if self.is_restricted:
+            self._enter_restricted_mode()
 
         self._start_ban_check()
 
@@ -175,7 +179,24 @@ class UserDashboard:
         self.right_panel = tk.Frame(self.main_panel, bg=PRIMARY_BG)
         self.right_panel.pack(side="right", fill="both", expand=True)
 
-        self._show_dashboard()
+        if not self.is_restricted:
+            self._show_dashboard()
+
+    def _enter_restricted_mode(self):
+        self.is_restricted = True
+
+        for btn in (self.dashboard_btn, self.browse_equipment_btn, self.notification_btn, self.profile_btn):
+            btn.config(state="disabled", cursor="arrow")
+            btn.unbind("<Button-1>")
+
+        self.user_avatar.unbind("<Button-1>")
+        self.user_username.unbind("<Button-1>")
+        self.user_avatar.config(cursor="arrow")
+        self.user_username.config(cursor="arrow")
+
+        self.active_btn = self.reservation_btn
+        self._highlight_active_button()
+        self._show_reservation_page("borrowed")
 
     def _show_dashboard(self):
         self._clear_right_panel()
@@ -236,6 +257,11 @@ class UserDashboard:
     def _show_reservation_page(self, tab=None):
         self.user_window.title(f"{W_RESERVATION_TITLE} - {APP_NAME}")
         self._clear_right_panel()
+
+        if self.is_restricted:
+            tab = "borrowed"
+            tk.Label(self.right_panel, text=get_ban_message(self.user.get("ban_reason")), font=("Arial", 14), bg=PRIMARY_BG, fg=STATUS_ERROR, wraplength=1000, justify="left").pack(fill="x", padx=20, pady=(15, 0))
+
         ReservationPage(self.right_panel, self.colors, self.user, initial_tab=tab or "pending")
 
     def _show_notification_page(self):
@@ -337,9 +363,17 @@ class UserDashboard:
         if not self.user_window.winfo_exists():
             return
 
-        if user and user.get("is_banned"):
-            self._force_logout()
-            return
+        if user:
+            is_banned = bool(user.get("is_banned"))
+
+            if is_banned and not self.is_restricted:
+                self.user["is_banned"] = True
+                messagebox.showwarning("Account Restricted", get_ban_message(self.user.get["ban_reason"]))
+                self._enter_restricted_mode()
+            elif not is_banned and self.is_restricted:
+                messagebox.showinfo("Account Reinstated", "Your Account has been reinstated. Please log in again.")
+                self._logout_now()
+                return
 
         # noinspection PyTypeChecker
         self._ban_after_id = self.user_window.after(BAN_CHECK_MS, self._check_ban)
@@ -353,8 +387,7 @@ class UserDashboard:
                 pass
             self._ban_after_id = None
 
-    def _force_logout(self):
-        messagebox.showinfo("Account Banned", "Your account has been banned. You will be logged out.")
+    def _logout_now(self):
         clear_session()
         self._cancel_ban_check()
         self.user_window.destroy()

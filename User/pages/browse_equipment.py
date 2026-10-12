@@ -572,6 +572,10 @@ class BrowseEquipmentPage:
         elif result == "damaged":
             messagebox.showinfo("Unavailable", "This equipment is currently under repair or damaged.")
             self._sync_equipment()
+        elif result == "overdue":
+            messagebox.showwarning("Reservation Blocked", "You have overdue items. Please return them before making a new reservation.")
+        elif result == "banned":
+            messagebox.showwarning("Account Restricted", "Your account is restricted. Please contact your department.")
         else:
             messagebox.showerror("Error", "Failed to submit reservation.")
 
