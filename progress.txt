@@ -326,5 +326,39 @@ FIXED
 - _enter_restricted_mode was called before _build_ui (AttributeError: no attribute 'dashboard_btn')
 - update_reservation_flags used the wrong column (reservation_id instead of id)
 - notifications table: user_id type changed to uuid, notification_id renamed to id
-- "Hyd University" typo in SCHOOL_NAME
 - Unresolved reference 'run_overdue_check' in admin dashboard (missing import)
+
+Oct 13, 2026 (Tuesday)
+ADDED
+- "Due soon" notification (DUE_SOON_DAYS before the return date, sent once per reservation)
+    - run_due_soon_check() in overdue_service.py
+    - get_due_soon_candidates() in auth_service.py
+    - New column: reservation.due_soon_notified
+- Two ban messages (BAN_MESSAGE_AUTO and BAN_MESSAGE_MANUAL) with get_ban_message()
+- New column: users.ban_reason ("auto" or "manual")
+- set_user_banned() now accepts a reason parameter (default "manual")
+- Unban is blocked while the user still has borrowed equipment (Approved or Return Pending)
+- Username validation (must start with a letter) on sign up and change username
+- A-Z filter in Manage Users (works together with search, Active/Banned filter, and pagination)
+- Overdue banner on Browse Equipment (shown when the user has overdue items)
+- OVERDUE_BANNER_MESSAGE in Config/settings.py
+- user_has_overdue_items() now has a quiet option for background threads
+
+CHANGED
+- Overdue system bans are marked as "auto", admin bans as "manual"
+- Restricted users see the message that matches their ban reason
+- Login no longer shows a ban message (restricted mode banner is used instead)
+- Notification page shows due soon, warning, and reminder messages in the correct colors
+- Manage Users: unban result has three outcomes (success, failed, blocked by rule) so only one message is shown
+- Pending Request tab is disabled for restricted users (only Borrowed Equipment can be opened)
+- Disabled tab shows the "no" cursor
+
+FIXED
+- run_overdue_check was using get_due_soon_candidates instead of get_overdue_candidates
+- Missing user_id in run_overdue_check
+- "_source" typo ("messages" instead of "message") that showed warnings as "rejected request for Unknown Equipment"
+- set_user_banned "unexpected argument" error (missing reason parameter)
+- Extra reason argument passed to create_notification
+- Change username showed two messageboxes on an invalid or taken username (profile.py now handles success, failed, and blocked results separately)
+- _apply_ban_result used self.user.get["ban_reason"] (TypeError), and ban_reason was not saved after a live ban
+- Unresolved attribute 'restricted' in ReservationPage (self.restricted was not set)

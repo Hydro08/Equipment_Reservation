@@ -20,11 +20,12 @@ class ReservationPage:
         "borrowed": ("Approved", "Return Pending"),
     }
 
-    def __init__(self, parent, color, user, initial_tab="pending"):
+    def __init__(self, parent, color, user, initial_tab="pending", restricted=False):
         self.parent = parent
         self.colors = color
         self.user = user
-        self.mode = initial_tab
+        self.restricted = restricted
+        self.mode = "borrowed" if restricted else initial_tab
         self.all_reservations = []
         self.current_data = []
         self.current_page = 0
@@ -47,6 +48,9 @@ class ReservationPage:
             btn = tk.Button(self.tab_frame, text=label, font=("Arial", 12, "bold"), cursor="hand2", bd=0, padx=20, pady=8, command=lambda m=mode: self._switch_tab(m))
             btn.pack(side="left", padx=5)
             self.tab_buttons[mode] = btn
+
+            if self.restricted and mode != "borrowed":
+                btn.config(state="disabled", cursor="no", disabledforeground=MUTED_FG)
 
         self.body_frame = tk.Frame(self.reservation_panel, bg=PRIMARY_BG)
         self.body_frame.pack(fill="both", expand=True)

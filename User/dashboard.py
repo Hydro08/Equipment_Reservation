@@ -9,10 +9,10 @@ from User.pages.reservation import ReservationPage
 from User.pages.notification import NotificationPage
 from User.pages.profile import ProfilePage
 
-from Authentication.auth_service import get_dashboard_summary, get_user_by_id
+from Authentication.auth_service import get_dashboard_summary, get_user_by_id, user_has_overdue_items
 from Database.session_manager import clear_session
 from Config.colors import PRIMARY_BG, SECONDARY_BG, WHITE_BG, PRIMARY_FG, GREEN_BG, DARK_BLUE_BG, MUTED_FG, STATUS_ERROR
-from Config.settings import BAN_CHECK_MS, SCHOOL_NAME, APP_NAME, W_DASHBOARD_TITLE, W_BROWSE_EQUIP_TITLE, W_RESERVATION_TITLE, W_NOTIFICATION_TITLE, W_PROFILE_TITLE, NAV_LABELS, get_ban_message
+from Config.settings import BAN_CHECK_MS, SCHOOL_NAME, APP_NAME, W_DASHBOARD_TITLE, W_BROWSE_EQUIP_TITLE, W_RESERVATION_TITLE, W_NOTIFICATION_TITLE, W_PROFILE_TITLE, NAV_LABELS, get_ban_message, OVERDUE_BANNER_MESSAGE
 from Config.layout import DASHBOARD_WINDOW_WIDTH, DASHBOARD_WINDOW_HEIGHT, BTN_WIDTH, BTN_FONT, BTN_CURSOR
 
 class UserDashboard:
@@ -186,7 +186,7 @@ class UserDashboard:
         self.is_restricted = True
 
         for btn in (self.dashboard_btn, self.browse_equipment_btn, self.notification_btn, self.profile_btn):
-            btn.config(state="disabled", cursor="arrow")
+            btn.config(state="disabled", cursor="no")
             btn.unbind("<Button-1>")
 
         self.user_avatar.unbind("<Button-1>")
@@ -252,7 +252,26 @@ class UserDashboard:
     def _show_equipment_page(self):
         self.user_window.title(f"{W_BROWSE_EQUIP_TITLE} - {APP_NAME}")
         self._clear_right_panel()
+
+        banner = tk.Frame(self.right_panel, bg=PRIMARY_BG)
+        banner.pack(fill="x")
+        threading.Thread(target=self._overdue_banner_worker, args=(banner,), daemon=True).start()
+
         BrowseEquipmentPage(self.right_panel, self.colors, self.user["id"])
+
+    def _overdue_banner_worker(self, banner):
+        has_overdue = user_has_overdue_items(self.user["id"], quiet=True)
+        try:
+            # noinspection PyTypeChecker
+            self.user_window.after(0, lambda: self._show_overdue_banner(banner, has_overdue))
+        except (tk.TclError, RuntimeError):
+            pass
+
+    @staticmethod
+    def _show_overdue_banner(banner, has_overdue):
+        if not has_overdue or not banner.winfo_exists():
+            return
+        tk.Label(banner, text=OVERDUE_BANNER_MESSAGE, font=("Arial", 14), bg=PRIMARY_BG, fg=STATUS_ERROR, wraplength=1000, justify="center").pack(fill="x", padx=20, pady=(15, 0))
 
     def _show_reservation_page(self, tab=None):
         self.user_window.title(f"{W_RESERVATION_TITLE} - {APP_NAME}")
@@ -262,7 +281,7 @@ class UserDashboard:
             tab = "borrowed"
             tk.Label(self.right_panel, text=get_ban_message(self.user.get("ban_reason")), font=("Arial", 14), bg=PRIMARY_BG, fg=STATUS_ERROR, wraplength=1000, justify="left").pack(fill="x", padx=20, pady=(15, 0))
 
-        ReservationPage(self.right_panel, self.colors, self.user, initial_tab=tab or "pending")
+        ReservationPage(self.right_panel, self.colors, self.user, initial_tab=tab or "pending", restricted=self.is_restricted)
 
     def _show_notification_page(self):
         self.user_window.title(f"{W_NOTIFICATION_TITLE} - {APP_NAME}")
@@ -368,7 +387,8 @@ class UserDashboard:
 
             if is_banned and not self.is_restricted:
                 self.user["is_banned"] = True
-                messagebox.showwarning("Account Restricted", get_ban_message(self.user.get["ban_reason"]))
+                self.user["ban_reason"] = user.get("ban_reason")
+                messagebox.showwarning("Account Restricted", get_ban_message(self.user["ban_reason"]))
                 self._enter_restricted_mode()
             elif not is_banned and self.is_restricted:
                 messagebox.showinfo("Account Reinstated", "Your Account has been reinstated. Please log in again.")

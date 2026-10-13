@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta, timezone
 
-from Authentication.auth_service import get_overdue_candidates, update_reservation_flags, add_user_warnings, create_notification, get_user_by_id, set_user_banned, get_users_over_warning_limit
-from Config.settings import MAX_WARNINGS, WARNING_ALERT_AT, LONG_OVERDUE_DAYS, OVERDUE_REMINDER_HOURS, BAN_MESSAGE_AUTO
+from Authentication.auth_service import get_overdue_candidates, update_reservation_flags, add_user_warnings, create_notification, get_user_by_id, set_user_banned, get_users_over_warning_limit, get_due_soon_candidates
+from Config.settings import MAX_WARNINGS, WARNING_ALERT_AT, LONG_OVERDUE_DAYS, OVERDUE_REMINDER_HOURS, BAN_MESSAGE_AUTO, DUE_SOON_DAYS
 
 def _parse_ts(value):
     if not value:
@@ -40,7 +40,27 @@ def warning_outcome(new_count):
         return "final_alert"
     return "warn"
 
+def run_due_soon_check():
+    for res in get_due_soon_candidates(DUE_SOON_DAYS):
+        user = get_user_by_id(res["user_id"])
+        if not user or user.get("is_banned"):
+            continue
+
+        due = date.fromisoformat(str(res["return_date"])[:10])
+        days_left = (due - date.today()).days
+        when = "today" if days_left <= 0 else "tomorrow" if days_left == 1 else f"in {days_left} days"
+        item = (res.get("equipment") or {}).get("name", "an item")
+
+        created = create_notification(
+            res["user_id"],
+            f"'{item}' is due {when}. Please return it on time to avoid a warning.",
+            "due_soon",
+        )
+        if created:
+            update_reservation_flags(res["id"], {"due_soon_notified": True})
+
 def run_overdue_check():
+    run_due_soon_check()
     for res in get_overdue_candidates():
         user_id = res["user_id"]
 
@@ -85,5 +105,5 @@ def run_overdue_check():
                 "reminder",
             )
     for u in get_users_over_warning_limit(MAX_WARNINGS):
-        set_user_banned(u["id"], True)
+        set_user_banned(u["id"], True, reason="auto")
         create_notification(u["id"], BAN_MESSAGE_AUTO, "ban")

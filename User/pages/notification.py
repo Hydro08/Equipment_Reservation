@@ -4,8 +4,7 @@ import threading
 from datetime import datetime, timezone, date
 from tkinter import messagebox
 from Authentication.auth_service import get_user_notification,dismiss_notification, get_unseen_messages, dismiss_message
-from Config.colors import PRIMARY_BG, SECONDARY_BG, RED_BG, PRIMARY_FG, MUTED_FG, STATUS_SUCCESS, STATUS_RETURNED, \
-    STATUS_ERROR, DARK_FG, STATUS_WARNING
+from Config.colors import PRIMARY_BG, SECONDARY_BG, RED_BG, PRIMARY_FG, MUTED_FG, STATUS_SUCCESS, STATUS_RETURNED, STATUS_ERROR, DARK_FG, STATUS_WARNING
 from Config.layout import NOTIFICATIONS_PER_PAGE
 
 class NotificationPage:
@@ -84,9 +83,9 @@ class NotificationPage:
         self._pagination_controls(total_pages)
 
     def _create_notification_row(self, note):
-        if note.get("_source") == "messages":
+        if note.get("_source") == "message":
             message = note["message"]
-            color = {"ban": STATUS_ERROR, "warning": STATUS_WARNING}.get(note.get("kind"), STATUS_RETURNED)
+            color = {"ban": STATUS_ERROR, "warning": STATUS_WARNING, "due_soon": STATUS_WARNING}.get(note.get("kind"), STATUS_RETURNED)
         else:
             equipment_data = note.get("equipment") or {}
             equipment_name = equipment_data.get("name", "Unknown Equipment")

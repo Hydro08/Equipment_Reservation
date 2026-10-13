@@ -1,5 +1,6 @@
 import tkinter as tk
 import threading
+import string
 
 from tkinter import messagebox
 from Authentication.auth_service import get_all_users, set_user_banned, user_has_borrowed_items
@@ -16,8 +17,11 @@ class ManageUsersPage:
         self.current_page = 0
         self.all_users = []
         self.filter_mode = "all"
+        self.selected_letter = "All"
 
         self._build_ui()
+        self._build_tabs()
+        self._build_letter_bar()
 
     def _build_ui(self):
         self.manage_users_panel = tk.Frame(self.parent, bg=PRIMARY_BG)
@@ -41,9 +45,7 @@ class ManageUsersPage:
 
         self.search_entry.bind("<Control-BackSpace>", lambda e: (self.search_entry.delete(0, tk.END), "break")[1])
         # noinspection PyTypeChecker
-        self.search_var.trace_add("write", lambda *args: self._on_search_change())
-
-        self._build_tabs()
+        self.search_var.trace_add("wri  te", lambda *args: self._on_search_change())
 
         self.loading_label = tk.Label(self.manage_users_panel, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
@@ -75,18 +77,58 @@ class ManageUsersPage:
         if hasattr(self, "content_frame"):
             self._render_list()
 
+    def _build_letter_bar(self):
+        self.letter_frame = tk.Frame(self.manage_users_panel, bg=PRIMARY_BG)
+        self.letter_frame.pack(padx=20, pady=(10, 0), anchor="w")
+
+        self.letter_buttons = {}
+        for letter in ["All"] + list(string.ascii_uppercase):
+            btn = tk.Button(
+                self.letter_frame, text=letter, font=("Arial", 10, "bold"),
+                cursor="hand2", bd=0, width=4 if letter == "All" else 3, pady=3,
+                command=lambda l=letter: self._set_letter(l),
+            )
+            btn.pack(side="left", padx=1)
+            self.letter_buttons[letter] = btn
+        self._update_letter_styles()
+
+    def _update_letter_styles(self):
+        for letter, btn in self.letter_buttons.items():
+            if letter == self.selected_letter:
+                btn.config(bg=GREEN_BG, fg=DARK_FG)
+            else:
+                btn.config(bg=SECONDARY_BG, fg=PRIMARY_FG)
+
+    def _set_letter(self, letter):
+        self.selected_letter = letter
+        self.current_page = 0
+        self._update_letter_styles()
+        if hasattr(self, "content_frame"):
+            self._render_list()
+
     def _filtered_users(self):
         q = self.search_var.get().lower()
         result = []
         for u in self.all_users:
+            name = u["username"]
+
             if self.filter_mode == "active" and u.get("is_banned"):
                 continue
             if self.filter_mode == "banned" and not u.get("is_banned"):
                 continue
-            if q and q not in u['username'].lower():
+            if q and q not in name.lower():
                 continue
+
+            if self.selected_letter == "#":
+                if name[:1].isalpha():
+                    continue
+            elif self.selected_letter != "All":
+                if not name.upper().startswith(self.selected_letter):
+                    continue
+
             result.append(u)
-        return result
+
+        return sorted(result, key=lambda u: u["username"].lower())
 
     def _on_search_change(self):
         self.current_page = 0
@@ -201,7 +243,9 @@ class ManageUsersPage:
             if not messagebox.askyesno("Confirm", f"{action} '{user['username']}'?"):
                 return
 
-        if set_user_banned(user["id"], banned):
+        result = set_user_banned(user["id"], banned)
+
+        if result:
             action = "banned" if banned else "unbanned"
             messagebox.showinfo(f"Successfully {action.capitalize()}", f"{user['username']} was successfully {action}.")
             self._refresh_users()

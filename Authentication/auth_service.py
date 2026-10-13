@@ -1,10 +1,13 @@
 import bcrypt
+import re
 
 from tkinter import messagebox
 from typing import Any
 from Database.supabase_client import supabase
 from postgrest import CountMethod
 from datetime import date, timedelta, timezone, datetime
+
+from Config.settings import USERNAME_PATTERN, USERNAME_RULES
 
 def login_user(identifier: str, plain_password: str):
     query: Any = supabase.table("users").select("*")
@@ -32,13 +35,20 @@ def get_user_by_id(user_id):
         return None
     return response.data[0]
 
+def is_valid_username(username):
+    return bool(re.fullmatch(USERNAME_PATTERN, username))
+
 def sign_up_user(username: str, plain_password: str):
+    if not is_valid_username(username):
+        messagebox.showinfo("Invalid Username", USERNAME_RULES)
+        return None
+
     query: Any = supabase.table("users").select("id")
     query = query.or_(f"username.eq.{username}")
     existing = query.execute()
 
     if existing.data:
-        messagebox.showinfo("Username already taken.")
+        messagebox.showinfo("Username Error", "Username already taken.")
         return None
 
     hashed = bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt())
@@ -148,9 +158,13 @@ def get_all_users():
         messagebox.showerror("Database Error", f"Error fetching users: {e}")
         return []
 
-def set_user_banned(user_id, banned: bool):
+def set_user_banned(user_id, banned: bool, reason="manual"):
     try:
-        update_data = {"is_banned": banned}
+        if not banned and user_has_borrowed_items(user_id):
+            messagebox.showwarning("Cannot Unban", "This user still has borrowed equipment. \nPlease confirm the return of all items before unbanning.")
+            return None
+
+        update_data = {"is_banned": banned, "ban_reason": reason if banned else None}
         if not banned:
             update_data["warning_count"] = 0
 
@@ -488,13 +502,16 @@ def dismiss_message(message_id):
         messagebox.showerror("Database Error", f"Error dismissing message: {e}")
         return True
 
-def user_has_overdue_items(user_id):
+def user_has_overdue_items(user_id, quiet=False):
     try:
         query: Any = supabase.table("reservation").select("id").eq("user_id", user_id).eq("status", "Approved").lt("return_date", str(date.today()))
-        response = query.limit(1).execute()
+        response = query.lt("return_date", str(date.today())).limit(1).execute()
         return bool(response.data)
     except Exception as e:
-        messagebox.showerror("Database Error", f"Error checking overdue items: {e}")
+        if quiet:
+            messagebox.showerror("Error Checking", f"Error checking overdue items: {e}")
+        else:
+            messagebox.showerror("Database Error", f"Error checking overdue items: {e}")
         return True
 
 def add_department(name):
@@ -654,11 +671,15 @@ def can_change_username(user_id):
 
 def change_username(user_id, new_username):
     try:
+        if not is_valid_username(new_username):
+            messagebox.showinfo("Invalid Username", USERNAME_RULES)
+            return None
+
         check: Any = supabase.table("users").select("id").ilike("username", new_username)
         existing = check.execute()
         if existing.data:
             messagebox.showwarning("Duplicate", f"Username '{new_username}' is already taken.")
-            return False
+            return None
 
         query: Any = supabase.table("users").update({
             "username": new_username,
@@ -691,4 +712,16 @@ def get_users_over_warning_limit(limit):
         return response.data or []
     except Exception as e:
         print(f"Error fetching users over limit: {e}")
+        return []
+
+def get_due_soon_candidates(days):
+    try:
+        today = date.today()
+        limit = today + timedelta(days=days)
+        query: Any = supabase.table("reservation").select("*, equipment(name)")
+        query = query.eq("status", "Approved").eq("due_soon_notified", False)
+        response = query.gte("return_date", str(today)).lte("return_date", str(limit)).execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching due soon reservations: {e}")
         return []

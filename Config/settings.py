@@ -32,6 +32,12 @@ ADMIN_NAV_LABELS = {
     "logout_btn": ("Log out", "🚪"),
 }
 
+USERNAME_PATTERN = r"[A-Za-z][A-Za-z0-9_]{2,19}"
+USERNAME_RULES = (
+    "Username must start with a letter, be 3 to 20 characters long, "
+    "and contain only letters, numbers, or underscores."
+)
+
 MAX_WARNINGS = 5
 WARNING_ALERT_AT = 4
 LONG_OVERDUE_DAYS = 7
@@ -40,6 +46,10 @@ OVERDUE_CHECK_MS = 64000
 
 BAN_CHECK_MS = 500
 POLL_INTERVAL_MS = 5000
+
+OVERDUE_BANNER_MESSAGE = (
+    "You have overdue items. Please return them before making a new reservation."
+)
 
 BAN_MESSAGE_AUTO = (
     f"Your account is restricted due to repeated overdue returns. "

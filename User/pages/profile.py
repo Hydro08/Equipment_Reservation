@@ -274,6 +274,7 @@ class ProfilePage:
         entry = tk.Entry(win, textvariable=username_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat")
         entry.pack(padx=20, pady=(0, 20), ipady=4)
         entry.focus_set()
+        entry.bind("<Control-BackSpace>", lambda e: (entry.delete(0, tk.END), "break")[1])
 
         user_width = 300
         user_height = 150
@@ -285,13 +286,17 @@ class ProfilePage:
 
         def save():
             new_name = username_var.get().strip()
+
             if not new_name:
                 messagebox.showwarning("Missing Field", "Username is required.", parent=win)
                 return
             if new_name == self.user_data.get("username"):
                 win.destroy()
                 return
-            if change_username(self.user["id"], new_name):
+
+            result = change_username(self.user["id"], new_name)
+
+            if result:
                 self.user_data["username"] = new_name
                 self.user["username"] = new_name
                 messagebox.showinfo("Success", "Username updated.", parent=win)
@@ -299,8 +304,8 @@ class ProfilePage:
                 if self.refresh_username_callback:
                     self.refresh_username_callback(new_name)
                 self._refresh_page()
-            else:
-                messagebox.showerror("Error", "Could not update the username. It may already be taken.", parent=win)
+            elif result is False:
+                messagebox.showerror("Error", "Could not update the username. Please try again.", parent=win)
 
         btn_frame = tk.Frame(win, bg=PRIMARY_BG)
         btn_frame.pack(pady=(0, 20))
@@ -329,6 +334,7 @@ class ProfilePage:
         current_entry = tk.Entry(win, textvariable=current_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat", show="*")
         current_entry.pack(padx=20, pady=(0, 10), ipady=4)
         current_entry.focus_set()
+        current_entry.bind("<Control-BackSpace>", lambda e: (current_entry.delete(0, tk.END), "break")[1])
 
         show_var = tk.BooleanVar(value=False)
         tk.Checkbutton(win, text="Show Password", variable=show_var, font=("Arial", 11), bg=PRIMARY_BG, fg=PRIMARY_FG, selectcolor=PRIMARY_BG, activebackground=PRIMARY_BG, activeforeground=PRIMARY_FG, cursor="hand2", command=lambda: toggle_show()).pack(anchor="w", padx=20)
@@ -341,10 +347,12 @@ class ProfilePage:
         tk.Label(new_fields_frame, text="New Password", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).pack(padx=20, pady=(10, 6), anchor="w")
         new_entry = tk.Entry(new_fields_frame, textvariable=new_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat", show="*")
         new_entry.pack(padx=20, pady=(0, 10), ipady=4)
+        new_entry.bind("<Control-BackSpace>", lambda e: (new_entry.delete(0, tk.END), "break")[1])
 
         tk.Label(new_fields_frame, text="Confirm New Password", font=("Arial", 13), bg=PRIMARY_BG, fg=PRIMARY_FG).pack(padx=20, pady=(0, 6), anchor="w")
         confirm_entry = tk.Entry(new_fields_frame, textvariable=confirm_var, width=28, font=("Arial", 12), bg=SECONDARY_BG, fg=PRIMARY_FG, insertbackground=PRIMARY_FG, relief="flat", show="*")
         confirm_entry.pack(padx=20, pady=(0, 10), ipady=4)
+        confirm_entry.bind("<Control-BackSpace>", lambda e: (confirm_entry.delete(0, tk.END), "break")[1])
 
         btn_frame = tk.Frame(win, bg=PRIMARY_BG)
         btn_frame.pack(pady=(10, 20))
