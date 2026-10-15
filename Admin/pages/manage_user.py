@@ -128,7 +128,7 @@ class ManageUsersPage:
 
             result.append(u)
 
-        return sorted(result, key=lambda u: u["username"].lower())
+        return sorted(result, key=lambda user: user["username"].lower())
 
     def _on_search_change(self):
         self.current_page = 0
