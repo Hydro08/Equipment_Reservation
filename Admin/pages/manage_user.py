@@ -45,7 +45,7 @@ class ManageUsersPage:
 
         self.search_entry.bind("<Control-BackSpace>", lambda e: (self.search_entry.delete(0, tk.END), "break")[1])
         # noinspection PyTypeChecker
-        self.search_var.trace_add("wri  te", lambda *args: self._on_search_change())
+        self.search_var.trace_add("write", lambda *args: self._on_search_change())
 
         self.loading_label = tk.Label(self.manage_users_panel, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
