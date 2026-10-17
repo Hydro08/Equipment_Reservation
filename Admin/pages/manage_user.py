@@ -2,30 +2,39 @@ import tkinter as tk
 import threading
 import string
 
+from datetime import date
 from tkinter import messagebox
-from Authentication.auth_service import get_all_users, set_user_banned, user_has_borrowed_items
-from Config.colors import PRIMARY_BG, SECONDARY_BG, GREEN_BG, DARK_BLUE_BG, BANNED_BG, RED_BG, PRIMARY_FG, MUTED_FG, STATUS_ERROR, STATUS_SUCCESS, DARK_FG
-from Config.layout import USER_COLUMN, USER_PER_PAGE
+from Authentication.auth_service import get_all_users, set_user_banned, user_has_borrowed_items, get_user_reservation_history
+from Config.colors import PRIMARY_BG, SECONDARY_BG, GREEN_BG, DARK_BLUE_BG, BANNED_BG, RED_BG, PRIMARY_FG, MUTED_FG, STATUS_ERROR, STATUS_WARNING,STATUS_SUCCESS, STATUS_RETURNED,DARK_FG
+from Config.layout import USER_COLUMN, USER_PER_PAGE, DETAIL_PANEL_WIDTH
+from Config.settings import MAX_WARNINGS, RECENT_LIMIT
+
 
 class ManageUsersPage:
 
     FILTERS = [("all", "All"), ("active", "Active"), ("banned", "Banned")]
 
-    def __init__(self, parent, colors):
+    def __init__(self, parent, colors, on_detail_toggle=None):
         self.parent = parent
         self.colors = colors
         self.current_page = 0
         self.all_users = []
         self.filter_mode = "all"
         self.selected_letter = "All"
+        self.selected_user_id = None
+        self.on_detail_toggle = on_detail_toggle
 
         self._build_ui()
-        self._build_tabs()
-        self._build_letter_bar()
 
     def _build_ui(self):
-        self.manage_users_panel = tk.Frame(self.parent, bg=PRIMARY_BG)
-        self.manage_users_panel.pack(fill="both", expand=True)
+        self.page = tk.Frame(self.parent, bg=PRIMARY_BG)
+        self.page.pack(fill="both", expand=True)
+
+        self.manage_users_panel = tk.Frame(self.page, bg=PRIMARY_BG)
+        self.manage_users_panel.pack(side="left", fill="both", expand=True)
+
+        self.detail_panel = tk.Frame(self.page, bg=SECONDARY_BG, width=DETAIL_PANEL_WIDTH)
+        self.detail_panel.pack_propagate(False)
 
         header = tk.Frame(self.manage_users_panel, bg=PRIMARY_BG)
         header.pack(fill="x", padx=20, pady=(20, 0))
@@ -46,6 +55,9 @@ class ManageUsersPage:
         self.search_entry.bind("<Control-BackSpace>", lambda e: (self.search_entry.delete(0, tk.END), "break")[1])
         # noinspection PyTypeChecker
         self.search_var.trace_add("write", lambda *args: self._on_search_change())
+
+        self._build_tabs()
+        self._build_letter_bar()
 
         self.loading_label = tk.Label(self.manage_users_panel, text="Loading...", font=("Arial", 24), **self.colors, height=50)
         self.loading_label.pack(pady=(20, 0))
@@ -158,6 +170,13 @@ class ManageUsersPage:
         self.all_users = get_all_users()
         self._render_list()
 
+        if self.selected_user_id:
+            user = next((u for u in self.all_users if u["id"] == self.selected_user_id), None)
+            if user:
+                self._show_user_detail(user)
+            else:
+                self._close_detail()
+
     def _clear_content(self):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
@@ -200,7 +219,7 @@ class ManageUsersPage:
     @staticmethod
     def _avatar(parent, name, bg, banned, size=50):
         canvas = tk.Canvas(parent, width=size, height=size, bg=bg, highlightthickness=0)
-        canvas.create_oval(2, 2, size - 2, size - 2, fill=SECONDARY_BG if banned else GREEN_BG, outline="")
+        canvas.create_oval(2, 2, size - 2, size - 2, fill=MUTED_FG if banned else GREEN_BG, outline="")
         initial = (name or "?").strip()[:1].upper() or "?"
         canvas.create_text(size // 2, size // 2, text=initial, font=("Arial", 20, "bold"), fill=DARK_BLUE_BG)
         return canvas
@@ -217,22 +236,17 @@ class ManageUsersPage:
         card.grid_rowconfigure(0, weight=1)
         card.grid_rowconfigure(1, weight=1)
 
-        self._avatar(card, user["username"], bg, banned).grid(row=0, column=0, rowspan=2, padx=(15, 12))
+        avatar = self._avatar(card, user["username"], bg, banned)
+        avatar.grid(row=0, column=0, rowspan=2, padx=(15, 12))
 
-        tk.Label(card, text=user["username"], font=("Arial", 15, "bold"), bg=bg, fg=PRIMARY_FG, anchor="w", justify="left", wraplength=180).grid(row=0, column=1, sticky="sw", padx=(0, 8))
-        tk.Label(card, text="• Banned" if banned else "• Active", font=("Arial", 11), bg=bg, fg=STATUS_ERROR if banned else STATUS_SUCCESS, anchor="w").grid(row=1, column=1, sticky="nw")
+        name_label = tk.Label(card, text=user["username"], font=("Arial", 15, "bold"), bg=bg, fg=PRIMARY_FG, anchor="w", justify="left", wraplength=180)
+        name_label.grid(row=0, column=1, sticky="sw", padx=(0, 8))
+        status_label = tk.Label(card, text="• Banned" if banned else "• Active", font=("Arial", 11), bg=bg, fg=STATUS_ERROR if banned else STATUS_SUCCESS, anchor="w")
+        status_label.grid(row=1, column=1, sticky="nw")
 
-        option_btn = tk.Label(card, text="⋮", font=("Arial", 18, "bold"), bg=bg, fg=PRIMARY_FG, cursor="hand2")
-        option_btn.place(relx=1.0, x=-10, y=5, anchor="ne")
-        option_btn.bind("<Button-1>", lambda e, u=user: self._show_user_menu(e, u))
-
-    def _show_user_menu(self, event, user):
-        menu = tk.Menu(self.content_frame, tearoff=0, bg=SECONDARY_BG, fg=PRIMARY_FG, activebackground=PRIMARY_BG, activeforeground=PRIMARY_FG)
-        if user.get("is_banned"):
-            menu.add_command(label="Unban", command=lambda: self._toggle_ban(user, False))
-        else:
-            menu.add_command(label="Ban", command=lambda: self._toggle_ban(user, True))
-        menu.tk_popup(event.x_root, event.y_root)
+        for widget in (card, avatar, name_label, status_label):
+            widget.config(cursor="hand2")
+            widget.bind("<Button-1>", lambda e, u=user: self._show_user_detail(u))
 
     def _toggle_ban(self, user, banned):
         if banned and user_has_borrowed_items(user["id"]):
@@ -249,8 +263,149 @@ class ManageUsersPage:
             action = "banned" if banned else "unbanned"
             messagebox.showinfo(f"Successfully {action.capitalize()}", f"{user['username']} was successfully {action}.")
             self._refresh_users()
-        else:
+        elif result is False:
             messagebox.showerror("Error", "Failed to update user.")
+
+    def _show_user_detail(self, user):
+        self.selected_user_id = user["id"]
+        if not self.detail_panel.winfo_ismapped():
+            self.detail_panel.pack(side="right", fill="y", before=self.manage_users_panel)
+            if self.on_detail_toggle:
+                self.on_detail_toggle(True)
+
+        self._render_detail(user, None)
+        threading.Thread(target=self._fetch_user_detail, args=(user["id"],), daemon=True).start()
+
+    def _fetch_user_detail(self, user_id):
+        reservations = get_user_reservation_history(user_id)
+        try:
+            # noinspection PyTypeChecker
+            self.page.after(0, lambda: self._on_detail_loaded(user_id, reservations))
+        except (tk.TclError, RuntimeError):
+            pass
+
+    def _on_detail_loaded(self, user_id, reservations):
+        if user_id != self.selected_user_id or not self.detail_panel.winfo_exists():
+            return
+        user = next((u for u in self.all_users if u["id"] == user_id), None)
+        if user:
+            self._render_detail(user, reservations)
+
+    def _close_detail(self):
+        self.selected_user_id = None
+        self.detail_panel.pack_forget()
+        if self.on_detail_toggle:
+            self.on_detail_toggle(False)
+
+    @staticmethod
+    def _parse_date(value):
+        try:
+            return date.fromisoformat(str(value)[:10])
+        except ValueError:
+            return None
+
+    def _detail_stats(self, reservations):
+        today = date.today()
+        borrowed = overdue = total = 0
+        for r in reservations:
+            status = r.get("status")
+            if status in ("Approved", "Return Pending"):
+                borrowed += 1
+            if status in ("Approved", "Return Pending", "Returned"):
+                total += 1
+            if status == "Approved":
+                due = self._parse_date(r.get("return_date"))
+                if due and due < today:
+                    overdue += 1
+        return borrowed, overdue, total
+
+    def _status_display(self, reservation):
+        status = reservation.get("status", "")
+        if status == "Approved":
+            due = self._parse_date(reservation.get("return_date"))
+            if due and due < date.today():
+                return "Overdue", STATUS_ERROR
+            return "Borrowed", STATUS_SUCCESS
+        colors = {
+            "Pending": STATUS_WARNING,
+            "Return Pending": STATUS_WARNING,
+            "Returned": STATUS_RETURNED,
+            "Rejected": STATUS_ERROR,
+            "Cancelled": MUTED_FG,
+        }
+        return status, colors.get(status, MUTED_FG)
+
+    def _detail_row(self, label, value, color=PRIMARY_FG):
+        row = tk.Frame(self.detail_panel, bg=SECONDARY_BG)
+        row.pack(fill="x", padx=20, pady=3)
+        tk.Label(row, text=label, font=("Arial", 11), bg=SECONDARY_BG, fg=MUTED_FG).pack(side="left")
+        tk.Label(row, text=value, font=("Arial", 11), bg=SECONDARY_BG, fg=color).pack(side="right")
+
+    def _render_detail(self, user, reservations):
+        for widget in self.detail_panel.winfo_children():
+            widget.destroy()
+
+        banned = user.get("is_banned")
+
+        top = tk.Frame(self.detail_panel, bg=SECONDARY_BG)
+        top.pack(fill="x", padx=15, pady=(12, 0))
+        tk.Label(top, text="User Details", font=("Arial", 14, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG).pack(side="left")
+        close = tk.Button(top, text="✕", font=("Arial", 14, "bold"), width=2, bg=STATUS_ERROR, fg=PRIMARY_FG, cursor="hand2")
+        close.pack(side="right")
+        close.bind("<Button-1>", lambda e: self._close_detail())
+
+        tk.Button(
+            self.detail_panel, text="Unban" if banned else "Ban", font=("Arial", 12, "bold"),
+            bg=GREEN_BG if banned else RED_BG, fg=DARK_FG, cursor="hand2", bd=0, pady=6,
+            command=lambda: self._toggle_ban(user, not banned),
+        ).pack(side="bottom", fill="x", padx=20, pady=15)
+
+        self._avatar(self.detail_panel, user["username"], SECONDARY_BG, banned, size=90).pack(pady=(20, 8))
+        tk.Label(self.detail_panel, text=user["username"], font=("Arial", 18, "bold"), bg=SECONDARY_BG, fg=PRIMARY_FG,
+                 wraplength=300).pack()
+        tk.Label(self.detail_panel, text="• Banned" if banned else "• Active", font=("Arial", 12), bg=SECONDARY_BG, fg=STATUS_ERROR if banned else STATUS_SUCCESS).pack(pady=(2, 15))
+
+        created = user.get("created_at")
+        self._detail_row("Created", created.split("T")[0] if created else "N/A")
+        self._detail_row("Warnings", f"{user.get('warning_count') or 0} / {MAX_WARNINGS}")
+        if banned:
+            reason = "Automatic (overdue)" if user.get("ban_reason") == "auto" else "By administrator"
+            self._detail_row("Ban reason", reason, STATUS_ERROR)
+
+        if reservations is None:
+            tk.Label(self.detail_panel, text="Loading...", font=("Arial", 12), bg=SECONDARY_BG, fg=MUTED_FG).pack(pady=20)
+            return
+
+        borrowed, overdue, total = self._detail_stats(reservations)
+        stats = tk.Frame(self.detail_panel, bg=SECONDARY_BG)
+        stats.pack(fill="x", padx=15, pady=(15, 5))
+        for col, (label, value, color) in enumerate([
+            ("Borrowed", borrowed, PRIMARY_FG),
+            ("Overdue", overdue, STATUS_ERROR if overdue else PRIMARY_FG),
+            ("Total", total, PRIMARY_FG),
+        ]):
+            stats.grid_columnconfigure(col, weight=1, uniform="stat")
+            box = tk.Frame(stats, bg=PRIMARY_BG)
+            box.grid(row=0, column=col, padx=4, sticky="nsew")
+            tk.Label(box, text=str(value), font=("Arial", 18, "bold"), bg=PRIMARY_BG, fg=color).pack(pady=(8, 0))
+            tk.Label(box, text=label, font=("Arial", 10), bg=PRIMARY_BG, fg=MUTED_FG).pack(pady=(0, 8))
+
+        tk.Label(self.detail_panel, text="Recent Activity", font=("Arial", 13, "bold"), bg=SECONDARY_BG,
+                 fg=PRIMARY_FG).pack(anchor="w", padx=20, pady=(15, 5))
+
+        recent = reservations[:RECENT_LIMIT]
+        if not recent:
+            tk.Label(self.detail_panel, text="No reservations yet.", font=("Arial", 11), bg=SECONDARY_BG, fg=MUTED_FG).pack(
+                anchor="w", padx=20)
+            return
+
+        for r in recent:
+            name = (r.get("equipment") or {}).get("name", "Unknown Equipment")
+            status_text, status_color = self._status_display(r)
+            row = tk.Frame(self.detail_panel, bg=SECONDARY_BG)
+            row.pack(fill="x", padx=20, pady=2)
+            tk.Label(row, text=name, font=("Arial", 11), bg=SECONDARY_BG, fg=PRIMARY_FG, anchor="w").pack(side="left")
+            tk.Label(row, text=status_text, font=("Arial", 11, "bold"), bg=SECONDARY_BG, fg=status_color).pack(side="right")
 
     def _pagination_controls(self, total_pages):
         if total_pages <= 1:

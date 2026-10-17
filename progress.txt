@@ -362,3 +362,27 @@ FIXED
 - Change username showed two messageboxes on an invalid or taken username (profile.py now handles success, failed, and blocked results separately)
 - _apply_ban_result used self.user.get["ban_reason"] (TypeError), and ban_reason was not saved after a live ban
 - Unresolved attribute 'restricted' in ReservationPage (self.restricted was not set)
+
+Oct 14 - 16
+- Busy
+
+Oct 17, 2026 (Saturday)
+ADDED
+- Manage Users: user detail panel on the right (avatar, status, created date, warnings, ban reason, stats, recent activity, Ban/Unban button)
+- get_user_reservation_history() in auth_service
+- Admin sidebar is minimized and locked while the user detail panel is open, and restored when the panel closes or the admin changes page
+
+CHANGED
+- Manage Users: removed the three-dot menu; Ban/Unban is now in the detail panel
+- get_all_users now includes ban_reason and warning_count
+- Removed old usernames that start with a number, so the A-Z filter covers every user
+- Banned avatar color changed so it is visible inside the detail panel
+
+FIXED
+- Manage Users: tabs and A-Z bar now appear above the loading label
+- Manage Users: unban blocked by a rule no longer shows a second error messagebox
+- "Shadows name 'u'" warning in _filtered_users
+
+POSSIBLE TASK
+- Fix the lag when opening the user detail panel (show "Loading..." first, then render once)
+- Skip updating nav labels when the text is already the same (_update_nav_labels)

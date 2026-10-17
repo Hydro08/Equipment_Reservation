@@ -32,6 +32,9 @@ class AdminDashboard:
         self.is_left_panel_minimized = False
         self.active_btn = None
 
+        self.sidebar_locked = False
+        self._restore_sidebar_after = False
+
         self.colors = self.fg_bg()
         self.btn_config = self._button_style()
         self._build_ui()
@@ -184,6 +187,9 @@ class AdminDashboard:
                 widget.bind("<Button-1>", lambda e: on_click())
 
     def toggle_sidebar(self):
+        if self.sidebar_locked:
+            return
+
         if self.is_left_panel_minimized:
             self._restore_left_frame()
             self.minimize_panel_btn.config(text="<")
@@ -194,6 +200,23 @@ class AdminDashboard:
             self._update_nav_labels(True)
 
         self._highlight_active_button()
+
+    def _on_user_detail_toggle(self, is_open):
+        if is_open:
+            if self.sidebar_locked:
+                return
+            self._restore_sidebar_after = not self.is_left_panel_minimized
+            if not self.is_left_panel_minimized:
+                self.toggle_sidebar()
+            self.sidebar_locked = True
+            self.minimize_panel_btn.config(state="disabled", cursor="no")
+        else:
+            if not self.sidebar_locked:
+                return
+            self.sidebar_locked = False
+            self.minimize_panel_btn.config(state="normal", cursor="hand2")
+            if self._restore_sidebar_after and self.is_left_panel_minimized:
+                self.toggle_sidebar()
 
     def _minimized_left_frame(self):
         self.is_left_panel_minimized = True
@@ -220,6 +243,8 @@ class AdminDashboard:
         self._navigate_to(event.widget)
 
     def _navigate_to(self, target_btn, tab=None):
+        self._on_user_detail_toggle(False)
+
         self.active_btn = target_btn
 
         self._highlight_active_button()
@@ -277,7 +302,7 @@ class AdminDashboard:
     def _show_manage_users_page(self):
         self.admin_window.title(f"{W_MANAGE_USERS_TITLE} - {APP_NAME}")
         self._clear_right_panel()
-        ManageUsersPage(self.right_panel, self.colors)
+        ManageUsersPage(self.right_panel, self.colors, on_detail_toggle=self._on_user_detail_toggle)
 
     def _show_reports_page(self):
         self.admin_window.title(f"{W_REPORTS_TITLE} - {APP_NAME}")

@@ -151,11 +151,20 @@ def get_dashboard_summary(user_id):
 
 def get_all_users():
     try:
-        query: Any = supabase.table("users").select("id, username, role, is_banned, created_at").eq("role", "user")
+        query: Any = supabase.table("users").select("id, username, role, is_banned, warning_count, created_at").eq("role", "user")
         response = query.execute()
         return response.data or []
     except Exception as e:
         messagebox.showerror("Database Error", f"Error fetching users: {e}")
+        return []
+
+def get_user_reservation_history(user_id):
+    try:
+        query: Any = supabase.table("reservation").select("*, equipment(name)").eq("user_id", user_id)
+        response = query.order("id",desc=True).execute()
+        return response.data or []
+    except Exception as e:
+        messagebox.showerror("Database Error", f"Error fetching user history: {e}")
         return []
 
 def set_user_banned(user_id, banned: bool, reason="manual"):
